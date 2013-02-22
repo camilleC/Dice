@@ -1,3 +1,8 @@
+/**
+ * Author:  Camille Ciancanelli
+ * 
+ * */
+
 import java.util.*;
 
 public class Player {

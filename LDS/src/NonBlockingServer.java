@@ -14,9 +14,12 @@
  * selector object:      Keeps track of a set of registered channels. Can be blocking. 
  * ServerSocketChannel:  Connection to hardware device (i.e. network socket). Can handle reading and writing.  
  * 
- * 
  * Selector object is created.  ServerSocketChannell is created, bound to a port and put in non-blocking mode.  
  * ServerSocketChannell is registered with Selector to register the channel.  SelectionKey represents the registered channel. 
+ * 
+ * 	// for time out info
+	// static final int TIMEOUT = 10000;
+	// http://www.velocityreviews.com/forums/t134477-nio-with-timeouts-nio.html
  * */
 
 import java.util.*;
@@ -31,9 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 public class NonBlockingServer {
-	// for time out info
-	// static final int TIMEOUT = 10000;
-	// http://www.velocityreviews.com/forums/t134477-nio-with-timeouts-nio.html
+
 	private int port;
 	private Game game; //
 	private boolean isClientClosed = false;
@@ -43,25 +44,8 @@ public class NonBlockingServer {
 		port = myPort; // instance variable automatically set to 0.
 		this.game = myGame;
 	}
-
-	public void clientClose(int id) {
-		try {
-			allClientChannels.get(id).close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		allClientChannels.remove(id);
-		game.removePlayer(id);
-	}
-
-
-	public boolean setClientClose() {
-		return isClientClosed = true;
-	}
-
-	public void start() throws IOException {
+	
+	public void startServer() throws IOException {
 
 		int MSG_MAX = 600;
 		boolean exit = false;
@@ -112,7 +96,7 @@ public class NonBlockingServer {
 						System.out.print("in Key cancle and close");
 						key.cancel();
 						client.close();
-						// probably need to remove the client from the list.
+						//TODO probably need to remove the client from the list.
 						continue;
 					}
 					buffer.flip();
@@ -153,4 +137,36 @@ public class NonBlockingServer {
 			}
 		}
 	}
+	
+	//-------------------------------------
+	//    Helper functions for Server
+	//-------------------------------------
+	
+    /* Closes connection to client 
+	 * Removes client from player queue
+	 */
+	public void clientClose(int id) {
+		try {
+			allClientChannels.get(id).close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		allClientChannels.remove(id);
+		game.removePlayer(id);
+	}
+
+    //TODO I think I can delete this.  Test this by making a client quit
+	//with code commented out.  Will program still work? 
+	/*public boolean setClientClose() {
+		return isClientClosed = true;
+	}*/
+
+	/*  Handles all client connections.
+	 *  Calls game methods and sends client messages to the game.
+	 *  Receives messages from game and sends them to clients. 
+	 *  TODO Must add try catch blocks!  It should not throw exceptions 
+	 *  it should catch them. 
+	 */
 }

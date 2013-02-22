@@ -1,4 +1,7 @@
-
+/*
+ * TODO should I get rid of this class and put it into the game?
+ * 
+ * */
 import java.util.ArrayList;
 
 //need to handle case where the message is not correct. 
@@ -21,14 +24,4 @@ public class Parser {
     return message;
 	}
 }
-/*		if (myMessage[0] =="bid") {
-			ArrayList<Integer> thebids = new ArrayList<Integer>();
-			diceCnt = new Integer(myMessage[1]);
-			for (i = 0; i < diceCnt; i++){
-				thebids.add(new Integer (myMessage[i+2]));
-			}
-			return new BidMessage(clientId, thebids);
-		}					//else
-//		return ;
-//	}
-}*/
+

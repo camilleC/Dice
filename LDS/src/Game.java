@@ -1,5 +1,16 @@
 
-//import java.util.ArrayList;
+/**Author:  Camille Ciancanelli
+ * Game Class: Has one state interface implemented by several "game states". 
+ *             Has a player class.
+ *             Has a server class.
+ *             Sends the messages to the clients.
+ *             Calls appropriate state to take action on player message.   
+ *             Sends player messages back to the server     
+ * NOTE: Clients are socket connects representing players.
+ *       Players are objects in the game.  There is one player per socket connection.
+ *        
+ *TODO does game shut of the server or does main? I think main does b/c main starts the server.   
+ * */
 import java.io.*;
 import java.util.Map;
 import java.util.HashMap;
@@ -47,6 +58,40 @@ public class Game {
 		
 		this.state = stateLobby;
 		assert state != null;
+	}
+	
+	/* Drives the game based on received messages from clients.
+	*  Responsible for changing state and implementing the game. 
+	*  Initial state is "LOBBY".  When min number of players is reached
+	*  state changes to "TIMERLOBBY".  When max wait time is over
+	*  state changes to "INGAME" where the betting rounds will be held.
+	*  When game is over TODO a winning message will be sent and state will
+	*  be reset to "LOBBY"
+	*/
+	public void gameLogic(int clientId, String[] request){
+		
+		//First check if state has changed. 
+		if (nextState == GameState.LOBBY){this.state = stateLobby;}
+		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
+		else if (nextState == GameState.INGAME){this.state = stateInGame;}	
+		
+		PlayerAct message= Parser.parse(clientId, request);
+		switch(message){
+		case DEFAULT: 
+			//will need to send a message to client saying bad message;s
+			break;
+		case JOIN:
+			state.join(clientId, request);
+			break;
+		case QUIT: 
+			state.quit(clientId);
+		case BID:
+			state.bid(playerMap, clientId, request);
+			break;
+		case CHALLENGE:
+			state.challenge(playerMap, clientId, request);
+			break;
+		} 
 	}
 
 	//===========================================
@@ -120,23 +165,24 @@ public class Game {
 	public boolean isPlayerValid(int id){return playerMap.containsKey(id);}
 
 	public void rollDice(int id){playerMap.get(id).rollDice();}
+	
 	//================================================================
 	//     methods for starting, ending, and parsing game info
 	//===============================================================
 
 	public void serverStart(){
 		try {
-			server.start();
+			server.startServer();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
+    //Method calls server to close connection to client channel. 
 	public void setclientClose(int id){
-		   server.setClientClose();
+		   //server.setClientClose();
 		   server.clientClose(id);
 	}
-
+    //TODO impliment and write PRE/POST comments
 	private void endGame(){}
 
 	private void parseCommandLine(){
@@ -173,31 +219,6 @@ public class Game {
 			gameLogic(new Integer(clientId), playerMap.get(clientId).getMessage());
 		}
 	}
-	//  Message translated into action ----------------------------------------
-	public void gameLogic(int clientId, String[] request){
-		
-		//First check if state has changed. 
-		if (nextState == GameState.LOBBY){this.state = stateLobby;}
-		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
-		else if (nextState == GameState.INGAME){this.state = stateInGame;}	
-		
-		PlayerAct message= Parser.parse(clientId, request);
-		switch(message){
-		case DEFAULT: 
-			//will need to send a message to client saying bad message;
-			break;
-		case JOIN:
-			state.join(clientId, request);
-			break;
-		case QUIT: 
-			state.quit(clientId);
-		case BID:
-			state.bid(playerMap, clientId, request);
-			break;
-		case CHALLENGE:
-			state.challenge(playerMap, clientId, request);
-			break;
-		} 
+
 	}
 
-}
