@@ -5,6 +5,7 @@
 
 import java.util.*;
 
+
 //TODO: take the new lines out. 
 public class StateInGame implements State {
 	
@@ -31,7 +32,7 @@ public class StateInGame implements State {
 				messageToPlayer = sb.toString();
 				myGame.setPlayerMessage(id, messageToPlayer);
 				myGame.clientHasMessage(id);
-				myGame.setWaitingStatus(id, true);// player has joined but can't play this round.  
+				myGame.setWaitingStatus(id, Game.PlayerStatus.WATCHING);// player has joined but can't play this round.  It is TRUE that they are waiting. 
 				myGame.setHasMessageToAll(true);
 				messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]\n";
 				return 0;
@@ -79,9 +80,4 @@ public class StateInGame implements State {
 			myGame.clientHasMessage(id);
 			}
 		};	
-		
-		
-		
-		
-		
 	}

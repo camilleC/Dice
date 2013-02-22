@@ -32,7 +32,7 @@ public class StateTimerLobby implements State{
 			messageToPlayer = sb.toString();
 			myGame.setPlayerMessage(id, messageToPlayer);
 			myGame.clientHasMessage(id);
-			myGame.setWaitingStatus(id, true);// player has joined and doesn't have to wait.
+			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
 			return 0;

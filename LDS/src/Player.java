@@ -12,7 +12,8 @@ import java.util.*;
 
 public class Player {
 	private String name;
-	private boolean waiting = false; // observing the game or actually playing. 
+	
+	private Game.PlayerStatus waiting = Game.PlayerStatus.CONNECTED; 
 	private String outMessage = new String();
 	private String collectMessage;
 	private String[] finalMessage;
@@ -44,10 +45,10 @@ public class Player {
 		return outMessage;		
 		}
 
-	public boolean getWaitingStatus(){
+	public Game.PlayerStatus getWaitingStatus(){
 		return waiting;
 	}
-	public void setWaitingStatus(boolean newWaitingStatus){
+	public void setWaitingStatus(Game.PlayerStatus newWaitingStatus){
 		waiting = newWaitingStatus;
 	}
 	
@@ -101,7 +102,7 @@ public class Player {
 	return finalMessage;
 	}
 	
-	//will need to fix this for invalid messages like [.... or ....]
+	//TODO will need to fix this for invalid messages like [.... or ....]
 	//also check to make sure it is not longer then 600
 	public int setMessage(String message){
 		
@@ -126,6 +127,7 @@ public class Player {
 		}
 		return -1;
 	}
+	
 	//Pre:  Takes the number of dice the player has
 	//Post: Roles all the dice. 
 	public void rollDice(){
@@ -139,9 +141,8 @@ public class Player {
 			value = r.nextInt(max - min +1) + min;
 			myDice.add(value);
 		}
-		
-		
 	}
+	
 	//Returns the diceCount after decrementation
 	public int decrementDice(){		
 		diceCount = diceCount -1;

@@ -3,6 +3,10 @@
  *
  * Interface so that the "State Pattern" may be implemented. 
  * 
+ *  
+ * TODO Ask Dr. Reedy.  I've decided not to use my "change state" function here b/c I think 
+ * the game should be responsible for changing state. Wont this decrease the coupling? 
+ * 
  * */
 
 import java.util.Map;

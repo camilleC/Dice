@@ -97,7 +97,8 @@ public class NonBlockingServer {
 						System.out.print("in Key cancle and close");
 						key.cancel();
 						client.close();
-						//TODO probably need to remove the client from the list.
+						//TODO Crash happens when client termimal terminates. 
+						// Call method ClientClose on the key and remove client from list. 
 						continue;
 					}
 					buffer.flip();

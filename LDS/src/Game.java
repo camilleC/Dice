@@ -13,6 +13,7 @@
  *TODO does game shut of the server or does main? I think main does b/c main starts the server.   
  * */
 import java.io.*;
+import java.util.Date;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -22,8 +23,8 @@ public class Game {
 	private int minPlayers; //TODO what if only two people join?  Does the game eventually kick them out and shut off? 
 	private int maxPlayers;
 	private int timeToWait; //wait time in Lobby with timer b/f moving to game state. 
-	private int startLobbyTime;  
-	private int endLobbyTime;  
+	private long startLobbyTime;  
+	private long endLobbyTime;  
 	private int atcnt;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
@@ -34,9 +35,10 @@ public class Game {
 	private GameState nextState;
 	private NonBlockingServer server;
 	private State state; 
-	
+
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
+	public enum PlayerStatus{CONNECTED, PLAYING, WATCHING};
 
 	// Constructor
 	public Game(String[] argsIn){
@@ -75,6 +77,11 @@ public class Game {
 			break;
 		case JOIN:
 			state.join(clientId, request);
+			
+			//if minimum number of players are reached change state and set the timer. 
+		//	if (getPlayerCount() == 3){
+         //       state = stateTimerLobby;
+		//	}
 			break;
 		case QUIT: 
 			state.quit(clientId);
@@ -87,18 +94,16 @@ public class Game {
 		} 
 	}
 	
-	//================================================================
-	//     Helper Methods for Game and Game Logic
-	//===============================================================
-	
-	
+
 	/*Returns true if the palyer's number is found in the map. 
 	 Call this method before iterating through a hashmap to
 	 prevent accessing a null reference.*/ 
 	public boolean isPlayerValid(int id){return playerMap.containsKey(id);}
     
 	/*Rolls all dice held by a player*/
-	public void rollDice(int id){playerMap.get(id).rollDice();}
+	public void rollDice(int id){
+		playerMap.get(id).rollDice();
+		}
 
 	public void serverStart(){
 		try {
@@ -178,6 +183,19 @@ public class Game {
 		playerMap.remove(playerID);
 	}
 	
+	public void startTime(){
+		startLobbyTime =  System.currentTimeMillis( );
+	}
+
+	public void endTime(){
+		endLobbyTime =  System.currentTimeMillis( );
+	}
+	
+	public long elapsedTime(){
+		long elapsed = startLobbyTime - endLobbyTime;
+		return elapsed;
+	}
+	
 	//==============================================================
 	//             Getters and Setters
 	//==============================================================
@@ -191,10 +209,9 @@ public class Game {
 	public void    setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
 	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
 
-
 	//Returns true if client is a player and false if client is observing
-	public boolean getWaitingStatus(int id){return playerMap.get(id).getWaitingStatus();} 
-	public void    setWaitingStatus(int id, boolean newWaitingStatus){playerMap.get(id).setWaitingStatus(newWaitingStatus);}	
+	public PlayerStatus getWaitingStatus(int id){return playerMap.get(id).getWaitingStatus();} 
+	public void    setWaitingStatus(int id, PlayerStatus newWaitingStatus){playerMap.get(id).setWaitingStatus(newWaitingStatus);}	
 	public String  getPlayerName(int Id){ return playerMap.get(Id).getName();}
 	public void    setPlayerName(int Id, String name){playerMap.get(Id).setName(name);}
 	public int     getPlayerAttemptCount(int id){return playerMap.get(id).getAttemptCount();}
@@ -203,8 +220,16 @@ public class Game {
 	public int     getMaxPlayerCnt(){return maxPlayers;}
 	public int     getTimeToWait(){return timeToWait;}
 	public int     getAtcnt(){return atcnt;}
-	public int     getPlayerCount() {return playerMap.size();}
 	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;	}
 	
+	public int     getPlayerCount() {
+		int count = 0;
+		for (Integer key : playerMap.keySet()){
+			if (playerMap.get(key).getWaitingStatus() != PlayerStatus.CONNECTED){
+				count++;
+			}
+		}
+		return count;
 	}
+}
 

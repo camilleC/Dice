@@ -25,6 +25,7 @@ public class StateLobby implements State{
 			myGame.setPlayerName(id, new String(request[2]));
 			sb.append("[state, in_lobby, ").append(id).append(", ").append(myGame.getPlayerCount());
             for (int i = 0; i < myGame.getPlayerCount(); i++){
+            	
             	if(myGame.isPlayerValid(i)){
 				sb.append(" , ").append(myGame.getPlayerName(i)).append(", ").append(i); 
             	}
@@ -33,17 +34,11 @@ public class StateLobby implements State{
 			messageToPlayer = sb.toString();
 			myGame.setPlayerMessage(id, messageToPlayer);
 			myGame.clientHasMessage(id);
-			myGame.setWaitingStatus(id, false);// player has joined and doesn't have to wait.
+			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);// player has joined and doesn't have to wait. TODO I think I can git rid of this, the default IS false. 
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
 	        //@TODO player count isn't the same as the number of players joined. Fix if time. 
 			System.err.print("in lobby   " + id );
-
-			//if minimum number of players are reached change state and set the timer. 
-			if (myGame.getPlayerCount() == 3){
-                changeState(Game.GameState.TIMERLOBBY);
-                
-			}
 			return 0;
 			}
 
