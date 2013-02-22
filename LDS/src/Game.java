@@ -10,6 +10,15 @@ public class Game {
 	private int minPlayers;
 	private int maxPlayers;
 	private int timeToWait;
+	private int startTime;
+	public int getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(int startTime) {
+		this.startTime = startTime;
+	}
+	private int endTime;
 	private int atcnt;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
@@ -161,11 +170,11 @@ public class Game {
 		assert temPlayer != null;
 		//TODO: check if key is valid.
 		if (playerMap.get(new Integer(clientId)).setMessage(messageIn) != -1){
-			recieveAction(new Integer(clientId), playerMap.get(clientId).getMessage());
+			gameLogic(new Integer(clientId), playerMap.get(clientId).getMessage());
 		}
 	}
 	//  Message translated into action ----------------------------------------
-	public void recieveAction(int clientId, String[] request){
+	public void gameLogic(int clientId, String[] request){
 		
 		//First check if state has changed. 
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
