@@ -1,6 +1,11 @@
 /**
  * Author:  Camille Ciancanelli
  * 
+ * Player represents a client.  
+ *        Collects a message (i.e. has matching brackets & <= 600 chars long]).
+ *        Message sent to server.
+ *        Can join, quit a game, make challenge or bid or be kicked out of a game.  
+ *           
  * */
 
 import java.util.*;

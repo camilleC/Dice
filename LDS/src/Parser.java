@@ -1,5 +1,6 @@
-/*
- * TODO should I get rid of this class and put it into the game?
+/**
+ * Author:  Camille Ciancanelli
+ * TODO should I get rid of this class and put its functionality into the game? 
  * 
  * */
 import java.util.ArrayList;

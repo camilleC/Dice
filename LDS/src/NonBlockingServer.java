@@ -1,4 +1,5 @@
-/*
+/**
+ * Author:  Camille Ciancanelli
  * This class communicates with the client.
  * Server takes a game object so that it can call Game object functions. 
  * 
@@ -159,9 +160,9 @@ public class NonBlockingServer {
 
     //TODO I think I can delete this.  Test this by making a client quit
 	//with code commented out.  Will program still work? 
-	/*public boolean setClientClose() {
+	public boolean setClientClose() {
 		return isClientClosed = true;
-	}*/
+	}
 
 	/*  Handles all client connections.
 	 *  Calls game methods and sends client messages to the game.

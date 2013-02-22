@@ -1,5 +1,6 @@
 
-/**Author:  Camille Ciancanelli
+/**
+ * Author:  Camille Ciancanelli
  * Game Class: Has one state interface implemented by several "game states". 
  *             Has a player class.
  *             Has a server class.
@@ -18,27 +19,14 @@ import java.util.HashMap;
 public class Game {
 	private String[] argsIn = null;
 	private int portNum;
-	private int minPlayers;
+	private int minPlayers; //TODO what if only two people join?  Does the game eventually kick them out and shut off? 
 	private int maxPlayers;
-	private int timeToWait;
-	private int startTime;
-	public int getStartTime() {
-		return startTime;
-	}
-
-	public void setStartTime(int startTime) {
-		this.startTime = startTime;
-	}
-	private int endTime;
+	private int timeToWait; //wait time in Lobby with timer b/f moving to game state. 
+	private int startLobbyTime;  
+	private int endLobbyTime;  
 	private int atcnt;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
-
-
-
-	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
-	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
-
 	private Map<Integer, Player> playerMap= new HashMap<Integer, Player>();
 	private State stateLobby;	
 	private State stateInGame;
@@ -46,8 +34,11 @@ public class Game {
 	private GameState nextState;
 	private NonBlockingServer server;
 	private State state; 
+	
+	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
+	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
 
-
+	// Constructor
 	public Game(String[] argsIn){
 		this.argsIn = argsIn; 
 		parseCommandLine();
@@ -70,7 +61,9 @@ public class Game {
 	*/
 	public void gameLogic(int clientId, String[] request){
 		
-		//First check if state has changed. 
+		//1) check if a player has timed out change state request made. 
+		//2) check if state has changed.
+		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
 		else if (nextState == GameState.INGAME){this.state = stateInGame;}	
@@ -93,82 +86,19 @@ public class Game {
 			break;
 		} 
 	}
-
-	//===========================================
-	// Getters and setters for Game
-	//===========================================
-
-	public int getPlayerCount() {
-		return playerMap.size();
-	}
-
-	public void setState(GameState nextState){
-		System.err.print("in changing state");
-		this.nextState = nextState;	
-		}			
-		
-	public int getMinPlayerCnt(){return minPlayers;}
-	public int getMaxPlayerCnt(){return maxPlayers;}
-	public int getTimeToWait(){return timeToWait;}
-	public int getAtcnt(){return atcnt;}
-	private void removePlayer(Player player){/*playerList.remove(player)*/;}
-    public void clientHasMessage(int id){playerWithMessage = id;}
-
-	// Returns player# with a message or -1 if no message---------
-	public int getPlayerNumWithMessage(){
-		return playerWithMessage;}
-	public void resetPlayerNumWithMessage(){playerWithMessage = -1;
-	}
-
-	// Adds a player to the PlayerQ and makes a player object.
-	// This does not "join" the player to the game. 
-	// Player will recieve all messages.
-	public void addPlayer(int playerID){
-		Player newPlayer = new Player(playerID, atcnt);
-		playerMap.put(playerID, newPlayer);
-	}
-
-	//will this remove the player but keep the key ordering the same? 
-	public void removePlayer(int playerID){playerMap.remove(playerID);}
-	
-	//- Three methods are needed to send messages to all players.
-	//- First, check if there is a message.  Then call the state
-	// and get the message.  Then, reset "has message" to false. 
-	public boolean getHasMessageToAll (){return hasAllMessage;} 
-	public String  getMessageAllPlayers(){return state.sendToAll();}
-	public void setHasMessageToAll(boolean reset){hasAllMessage = reset;}
-
-
-	//==================================================
-    // Methods calling Player getter and setters
-    //===================================================
-
-	//----player message -----------------------
-	public void setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
-	public String getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
-
-
-	//-----returns true if player is player
-	//-----returns false if player is observing
-	public boolean getWaitingStatus(int id){return playerMap.get(id).getWaitingStatus();}
-	public void setWaitingStatus(int id, boolean newWaitingStatus){playerMap.get(id).setWaitingStatus(newWaitingStatus);}
-
-	//-----player Name  --------------------------------
-	
-	
-	public String getPlayerName(int Id){ return playerMap.get(Id).getName();}
-	public void setPlayerName(int Id, String name){playerMap.get(Id).setName(name);}
-	
-	public int getPlayerAttemptCount(int id){return playerMap.get(id).getAttemptCount();}
-	public void setPlayerAttemptCount(int id, int newValue){ playerMap.get(id).setAttemptCount(newValue);}
-	
-	public boolean isPlayerValid(int id){return playerMap.containsKey(id);}
-
-	public void rollDice(int id){playerMap.get(id).rollDice();}
 	
 	//================================================================
-	//     methods for starting, ending, and parsing game info
+	//     Helper Methods for Game and Game Logic
 	//===============================================================
+	
+	
+	/*Returns true if the palyer's number is found in the map. 
+	 Call this method before iterating through a hashmap to
+	 prevent accessing a null reference.*/ 
+	public boolean isPlayerValid(int id){return playerMap.containsKey(id);}
+    
+	/*Rolls all dice held by a player*/
+	public void rollDice(int id){playerMap.get(id).rollDice();}
 
 	public void serverStart(){
 		try {
@@ -179,10 +109,10 @@ public class Game {
 	}
     //Method calls server to close connection to client channel. 
 	public void setclientClose(int id){
-		   //server.setClientClose();
+		   server.setClientClose();
 		   server.clientClose(id);
 	}
-    //TODO impliment and write PRE/POST comments
+    //TODO implement and write PRE/POST comments
 	private void endGame(){}
 
 	private void parseCommandLine(){
@@ -219,6 +149,62 @@ public class Game {
 			gameLogic(new Integer(clientId), playerMap.get(clientId).getMessage());
 		}
 	}
+	
+    //TODO why is remove player functionality commented out? 
+	private void removePlayer(Player player){
+		/*playerList.remove(player)*/;}
+	
+	/* Sets the client ID of player with a message*/
+    public void clientHasMessage(int id){
+    	playerWithMessage = id;}
 
+	/*Returns player# with a message or -1 if no message */
+	public int getPlayerNumWithMessage(){
+		return playerWithMessage;}
+	
+	/* Call after a message has been set to a player*/
+	public void resetPlayerNumWithMessage(){
+		playerWithMessage = -1;
+	}
+
+	/* Adds player to the PlayerQ but does not "join" them to the game */ 
+	public void addPlayer(int playerID){
+		Player newPlayer = new Player(playerID, atcnt);
+		playerMap.put(playerID, newPlayer);
+	}
+
+	/*will this remove the player but keep the key ordering the same?*/ 
+	public void removePlayer(int playerID){
+		playerMap.remove(playerID);
+	}
+	
+	//==============================================================
+	//             Getters and Setters
+	//==============================================================
+	
+	//- Three methods are needed to send messages to all players.
+	//- First, check if there is a message.  Then call the state
+	// and get the message.  Then, reset "has message" to false. 
+	public boolean getHasMessageToAll (){return hasAllMessage;} 
+	public String  getMessageAllPlayers(){return state.sendToAll();}
+	public void    setHasMessageToAll(boolean reset){hasAllMessage = reset;}
+	public void    setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
+	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
+
+
+	//Returns true if client is a player and false if client is observing
+	public boolean getWaitingStatus(int id){return playerMap.get(id).getWaitingStatus();} 
+	public void    setWaitingStatus(int id, boolean newWaitingStatus){playerMap.get(id).setWaitingStatus(newWaitingStatus);}	
+	public String  getPlayerName(int Id){ return playerMap.get(Id).getName();}
+	public void    setPlayerName(int Id, String name){playerMap.get(Id).setName(name);}
+	public int     getPlayerAttemptCount(int id){return playerMap.get(id).getAttemptCount();}
+	public void    setPlayerAttemptCount(int id, int newValue){ playerMap.get(id).setAttemptCount(newValue);}
+	public int     getMinPlayerCnt(){return minPlayers;}
+	public int     getMaxPlayerCnt(){return maxPlayers;}
+	public int     getTimeToWait(){return timeToWait;}
+	public int     getAtcnt(){return atcnt;}
+	public int     getPlayerCount() {return playerMap.size();}
+	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;	}
+	
 	}
 

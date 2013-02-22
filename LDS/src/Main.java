@@ -1,7 +1,7 @@
 
 	/**
-	 * Program: Liars Dice Server
 	 * Author:  Camille Ciancanelli
+	 * Program: Liars Dice Server
 	 * Purpose: Implements the game "Liars Dice" via a non-blocking server
 	 *          using the NIO library for networking. 
 	 *          
