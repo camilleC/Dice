@@ -21,6 +21,7 @@ public class StateTimerLobby implements State{
 			//String tempMessage = new String();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
+			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);
 			sb.append("[state, timer_with_lobby, ").append(id).append(", ").append(myGame.getPlayerCount());
             for (int i = 0; i < myGame.getPlayerCount(); i++){
             
@@ -32,7 +33,6 @@ public class StateTimerLobby implements State{
 			messageToPlayer = sb.toString();
 			myGame.setPlayerMessage(id, messageToPlayer);
 			myGame.clientHasMessage(id);
-			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
 			return 0;

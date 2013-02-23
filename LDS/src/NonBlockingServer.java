@@ -127,9 +127,10 @@ public class NonBlockingServer {
 						if (game.getHasMessageToAll()) {
 
 							for (Integer j : allClientChannels.keySet()) {
-								allClientChannels.get(j).write(
-										encoder.encode(CharBuffer.wrap(game
-												.getMessageAllPlayers())));
+								//checks to make sure clients who have connected but have not Joined do not recieve mesages. 
+								if (game.isPlayerValid(j)){
+								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getMessageAllPlayers())));
+								}
 							}
 							// Reset for new message.
 							game.setHasMessageToAll(false);

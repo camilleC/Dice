@@ -20,9 +20,9 @@ public class StateLobby implements State{
 	//TODO Send to many clients
 	public int join(int id, String[] request){
 			StringBuilder sb = new StringBuilder();
-			//String tempMessage = new String();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
+			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);
 			sb.append("[state, in_lobby, ").append(id).append(", ").append(myGame.getPlayerCount());
             for (int i = 0; i < myGame.getPlayerCount(); i++){
             	
@@ -34,11 +34,8 @@ public class StateLobby implements State{
 			messageToPlayer = sb.toString();
 			myGame.setPlayerMessage(id, messageToPlayer);
 			myGame.clientHasMessage(id);
-			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);// player has joined and doesn't have to wait. TODO I think I can git rid of this, the default IS false. 
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
-	        //@TODO player count isn't the same as the number of players joined. Fix if time. 
-			System.err.print("in lobby   " + id );
 			return 0;
 			}
 

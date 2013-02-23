@@ -66,6 +66,12 @@ public class Game {
 		//1) check if a player has timed out change state request made. 
 		//2) check if state has changed.
 		
+		//if minimum number of players are reached change state and set the timer. 
+	    if (getPlayerCount() == 3){
+           state = stateTimerLobby;
+		}
+	    
+		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
 		else if (nextState == GameState.INGAME){this.state = stateInGame;}	
@@ -77,11 +83,6 @@ public class Game {
 			break;
 		case JOIN:
 			state.join(clientId, request);
-			
-			//if minimum number of players are reached change state and set the timer. 
-		//	if (getPlayerCount() == 3){
-         //       state = stateTimerLobby;
-		//	}
 			break;
 		case QUIT: 
 			state.quit(clientId);
@@ -96,9 +97,17 @@ public class Game {
 	
 
 	/*Returns true if the palyer's number is found in the map. 
-	 Call this method before iterating through a hashmap to
+	 and the player has joined or is waiting.  Prevents connected
+	 players who haven't joined from receiving messages. 
 	 prevent accessing a null reference.*/ 
-	public boolean isPlayerValid(int id){return playerMap.containsKey(id);}
+	public boolean isPlayerValid(int id){
+		boolean valid = false;
+		if ((playerMap.get(id).getWaitingStatus() != PlayerStatus.CONNECTED) & playerMap.containsKey(id)){
+			valid = true;
+		}
+	
+		return valid;
+		}
     
 	/*Rolls all dice held by a player*/
 	public void rollDice(int id){
@@ -223,12 +232,17 @@ public class Game {
 	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;	}
 	
 	public int     getPlayerCount() {
+		// Uncomment to test. 
+		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
+		//System.out.print("size of palyer map is :" + playerMap.size() + "\n");
 		int count = 0;
 		for (Integer key : playerMap.keySet()){
 			if (playerMap.get(key).getWaitingStatus() != PlayerStatus.CONNECTED){
 				count++;
+			//	System.out.print("name of player waiting : " + playerMap.get(key).getName() + " \n");
 			}
 		}
+		//System.out.print("Size of playing/waiting palyers is:  :" + count + "\n");
 		return count;
 	}
 }

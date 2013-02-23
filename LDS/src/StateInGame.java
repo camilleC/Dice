@@ -20,7 +20,8 @@ public class StateInGame implements State {
 		public int join(int id, String[] request){
 				StringBuilder sb = new StringBuilder();
 				String messageToPlayer = new String();
-				myGame.setPlayerName(id, new String(request[2]));			
+				myGame.setPlayerName(id, new String(request[2]));
+				myGame.setWaitingStatus(id, Game.PlayerStatus.WATCHING);
 				sb.append("[state, in_game, ").append(id).append(", ").append(myGame.getPlayerCount());
 	            for (int i = 0; i < myGame.getPlayerCount(); i++){
 	            
@@ -32,7 +33,6 @@ public class StateInGame implements State {
 				messageToPlayer = sb.toString();
 				myGame.setPlayerMessage(id, messageToPlayer);
 				myGame.clientHasMessage(id);
-				myGame.setWaitingStatus(id, Game.PlayerStatus.WATCHING);// player has joined but can't play this round.  It is TRUE that they are waiting. 
 				myGame.setHasMessageToAll(true);
 				messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]\n";
 				return 0;
