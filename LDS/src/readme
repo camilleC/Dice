@@ -1,5 +1,27 @@
 Final Liar’s Dice API - Valid Message Conventions Approved by Dr. Meehan.
 
+package testingPackage;
+//import java.lang.*;
+import static org.junit.Assert.*;
+import csNetworking.Game;
+import java.util.*;
+import org.junit.Test;
+public class testGame {
+	
+	   String temp[] = {" ", " "};
+	    
+	    @Test
+	    public void testElapsedTime() throws InterruptedException {     
+	        long startLobbyTime;
+	        startLobbyTime =  System.currentTimeMillis();
+	        Thread.sleep(10000); //is this 10 seconds? 
+	        Game game = new Game(temp); 
+	        assertEquals("result", game.getTimeToWait(), game.elapsedTime(startLobbyTime));
+	        System.err.print("The unit test is not disabled. Check and see if it is in the build path.");
+	        }
+}
+
+
 
 [msgtype, arg1, arg2, …]
 

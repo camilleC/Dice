@@ -26,6 +26,7 @@ public class Game {
 	private long startLobbyTime;  
 	//private long endLobbyTime;  
 	private int atcnt;
+	private boolean timerOn = false;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
 	private Map<Integer, Player> playerMap= new HashMap<Integer, Player>();
@@ -63,17 +64,18 @@ public class Game {
 	*/
 	public void gameLogic(int clientId, String[] request){
 		
-		//1) check if a player has timed out change state request made. 
-		//2) check if state has changed.
-		
-        
+		//Min players reached, change state and turn timer on. 
 	    if (getPlayerCount() == minPlayers){
            state = stateTimerLobby;
+           timerOn = true;
+           System.err.print("min players reached");
            startTime();
 		}
-	    
-	    if (elapsedTime(startLobbyTime)>= timeToWait){
+	    //Only check this if the timer has been set (b/c min num of players is reached)
+	    //This will start the "round" and flip timer back to off. 
+	    if (timerOn & elapsedTime(startLobbyTime)>= timeToWait){
 	    	state = stateInGame;
+	    	timerOn = false;
 	    } 
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
@@ -210,7 +212,7 @@ public class Game {
 		return elapsed;
 	}
 	
-	public int     getPlayerCount() {
+	public int getPlayerCount() {
 		// Uncomment to test. 
 		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
 		//System.out.print("size of palyer map is :" + playerMap.size() + "\n");
