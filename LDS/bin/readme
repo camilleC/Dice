@@ -1,2 +1,146 @@
-ReadMe
-I've added stuff to my windows machine. Now can I push it? 
+Path and package info got messed up with my unit test.
+
+Unit test is here:
+
+package testingPackage;
+//import java.lang.*;
+import static org.junit.Assert.*;
+import csNetworking.Game;
+import java.util.*;
+import org.junit.Test;
+public class testGame {
+	
+	   String temp[] = {" ", " "};
+	    
+	    @Test
+	    public void testElapsedTime() throws InterruptedException {     
+	        long startLobbyTime;
+	        startLobbyTime =  System.currentTimeMillis();
+	        Thread.sleep(10000); //is this 10 seconds? 
+	        Game game = new Game(temp); 
+	        assertEquals("result", game.getTimeToWait(), game.elapsedTime(startLobbyTime));
+	        System.err.print("The unit test is not disabled. Check and see if it is in the build path.");
+	        }
+}
+
+Put it back in once I figure out package issue. 
+
+///////////////////////////////////////////////////////////////////////
+
+Final Liar’s Dice API - Valid Message Conventions Approved by Dr. Meehan.
+
+
+[msgtype, arg1, arg2, …]
+
+-Server command args:
+-p #port    port number to start listening on
+-m #min     number of players to start game. default=3
+-M #max     number of maximum clients. default=30 (above 30 not allowed)
+-t #time    lobby wait time to start once min players reached. default=60
+-a #atcnt    invalid move attempt count before kicking. default=3
+
+Example: ./server -p 6969 -m 47-M 1337
+
+-max msg length = 600 (longest conceivable data messages are inital/final round info.)
+-Player names are a .. z A..Z, max 10 chars.
+-Player numbers are permanent and represent the order in which you go around the table. If player 4 leaves, the turns go from 3 to 5 (rather than re-numbering players).
+
+Client -> Server 12
+[join,name]
+Client starts talking first by sending this message, with their name.
+Sample: [join,bob]
+
+[bid,dice_count,dice_val]
+Client sends their bid. Sample: [bid,3,5,4,1]
+
+[challenge]
+Client sends a challenge. Sample: [challenge]
+
+[quit, name]
+Client quits the game gracefully. Sample: [quit, “alex”]
+
+
+Server -> Clients
+* indicates messages sent to only one client. sent to all clients otherwise
+
+msg_SendStateToClient()
+[state,state_name,yourPlayer#, client_count,p1_name, p1num,...,pn_name,pnnum]*
+state_name = {in_game, lobby, lobby_with_timer}
+
+This tells the new client current state of game and all info they need to start receiving useful messages.
+Note: They will need additional messages to get up to speed on the game. If in_game, they should also receive a round_start message and player_turn so they can see what is going on in the game. I had to update this for “client” count rather than player count. We still had better get to know names of people who are new, even if they are not actual players.
+
+Sample (bob just joined):
+[state, lobby, 4, 4, joe, 1, jane, 2, jim, 3, bob, 4]
+
+[state,in_game,6,6,Jack,1,Mehof,2,Marry,3,Jane,4,joe,5,bob,6]
+(will also receive the round_start message, so he can watch the game)
+[round_start,4,1,5,2,3,3,5,4,4]
+[player_turn,2]
+
+//Does eveyone get this message even if the game is in progress?
+client_joined()
+[client_joined, name, player#]
+informs everyone player has joined
+Sample: [client_joined, bob, 6]
+
+//Assumes message doesn’t go to the person who quit.
+msg_client_quit()
+[client_quit, player#]
+informs everyone that a player has quit
+Sample: [client_quit, 6]
+
+//clients can only get kicked out for bid issues?
+msg_client_kicked()
+[client_kicked, player#]
+informs everyone that a player was kicked (timed out on bid)
+Sample: [client_kicked, 6]
+
+msg_timer_start()
+[timer_start,time]
+informs everyone of countdown (seconds before game starts)
+Sample: [timer_start, 60]
+
+msg_round_start()
+[round_start,player_count,player1#, p1_diceno,..., playern#, pn_diceno]
+Informs everyone of all the players’ dice counts
+Sample (4 players. p1 has 5 dice, p3 has 5, etc): [round_start, 4,1,5,3,4,4,5,5,4]
+
+
+
+msg_dice()   
+[your_dice,diceno,1,2,3,4,5]*
+Tells a client their dice values.
+Sample (player has 4 dice. they are 3,2,4,6): [your_dice, 4, 3, 2, 4, 6]**
+
+msg_Player_Turn()       
+[player_turn,player#]
+broadcast whose turn it is
+Sample: [player_turn, 2]
+
+msg_bid_report()
+[bid_report, player#, dice_count, dice_val]
+Inform all the clients what a player’s bid was
+Sample (player 4 bid “three fours”: [bid_report, 4, 3, 4]
+
+msg_Challenge_report)
+[challenge_report, player#]
+Inform all clients of a player’s challenge (calling prev player a “liar”)
+Sample: [challenge_report, 4]
+
+msg_round_end()
+[round_end, loser_player#, player_count,p1#,p1_dicecount,p1_dice1,...,p1_dicen,...,pn_info]
+Summarizes end of round.
+Sample (player 1 had 3 dice, all 5s. p2 had 3 dice, all 4s. etc.):
+[round_end, 3, 4, 1,3,5,5,5, 2,3,4,4,4, 3,4,2,2,2,4, 4,2,1,1]
+
+msg_game_end()
+[game_end,winner_player#]
+Summarizes end of game - last player with >= 1 dice remaining
+Sample: [game_end, 3]
+
+
+msg_invalidMove()   
+[invalid_move,attemptcount]*
+Decrement a player’s attempt count. Separate from timeout, they can get kicked if they make too many invalid moves.
+Sample: [invalid_move, 2]

@@ -29,6 +29,8 @@ public class Game {
 	private boolean timerOn = false;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
+	private boolean hasAllMessageGameLogic = false;
+	private String messageFromGameLogic;
 	private Map<Integer, Player> playerMap= new HashMap<Integer, Player>();
 	private State stateLobby;	
 	private State stateInGame;
@@ -41,7 +43,9 @@ public class Game {
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
 	public enum PlayerStatus{CONNECTED, PLAYING, WATCHING};
 
-	// Constructor
+	//===============================================================
+	//   Constructor
+	//===============================================================
 	public Game(String[] argsIn){
 		this.argsIn = argsIn; 
 		parseCommandLine();
@@ -49,10 +53,12 @@ public class Game {
 		stateLobby = new StateLobby(this); // make new instance of lobby with current instance of game
 		stateInGame = new StateInGame(this);
 		stateTimerLobby = new StateTimerLobby(this);
-		
 		this.state = stateLobby;
 		assert state != null;
 	}
+	//===============================================================
+	//      Private methods
+	//===============================================================
 	
 	/* Drives the game based on received messages from clients.
 	*  Responsible for changing state and implementing the game. 
@@ -62,12 +68,13 @@ public class Game {
 	*  When game is over TODO a winning message will be sent and state will
 	*  be reset to "LOBBY"
 	*/
-	public void gameLogic(int clientId, String[] request){
+	private void gameLogic(int clientId, String[] request){
 		
-		//Min players reached, change state and turn timer on. 
+		//TODO this will cause a bug b/c if there are only three people playing it will allways be true.  Through in a boolean to make sure this gets triggerd once per game. 
 	    if (getPlayerCount() == minPlayers){
            state = stateTimerLobby;
            timerOn = true;
+           sendTimerMessage();
            System.err.print("min players reached");
            startTime();
 		}
@@ -77,6 +84,8 @@ public class Game {
 	    	state = stateInGame;
 	    	timerOn = false;
 	    } 
+	    
+	    
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
@@ -101,7 +110,48 @@ public class Game {
 		} 
 	}
 	
-
+	
+	private void parseCommandLine(){
+		int i = 0;
+		for (i = 0; i < argsIn.length; i++){
+			if (argsIn[i].equals("-p")){
+				portNum= Integer.parseInt(argsIn[i+1]);//portNum // = Integer.parseInt(argsIn[i+1]); i++;
+			}
+			if (argsIn[i].equals("-m")){
+				minPlayers= Integer.parseInt(argsIn[i+1]);
+			}
+			if (argsIn[i].equals("-M")){
+				maxPlayers = Integer.parseInt(argsIn[i+1]);
+			}
+			if (argsIn[i].equals("-t")){
+				timeToWait= Integer.parseInt(argsIn[i+1]); 
+			}
+			if (argsIn[i].equals("-a")){
+				atcnt = Integer.parseInt(argsIn[i+1]); 
+			}
+		}
+		System.out.println(String.format("port = %d min = %d max %d time %d kicked %d", portNum, minPlayers, maxPlayers, timeToWait, atcnt));
+	}
+	
+	private void sendTimerMessage(){
+		messageFromGameLogic = "[timer_start, " + timeToWait + "]";
+	    setHasMessageToAllFromGameLogic(true);
+	}
+	private void startTime(){
+		startLobbyTime =  System.currentTimeMillis( );
+	}
+	
+	private int elapsedTime(long time){
+		long temp = System.currentTimeMillis( ) - time;
+		int elapsed = (int) (temp/1000) % 60 ;
+		return elapsed;
+	}
+	
+	//===============================================================
+	//      Public methods
+	//===============================================================
+	
+	
 	/*Returns true if the palyer's number is found in the map. 
 	 and the player has joined or is waiting.  Prevents connected
 	 players who haven't joined from receiving messages. 
@@ -134,28 +184,6 @@ public class Game {
 	}
     //TODO implement and write PRE/POST comments
 	private void endGame(){}
-
-	private void parseCommandLine(){
-		int i = 0;
-		for (i = 0; i < argsIn.length; i++){
-			if (argsIn[i].equals("-p")){
-				portNum= Integer.parseInt(argsIn[i+1]);//portNum // = Integer.parseInt(argsIn[i+1]); i++;
-			}
-			if (argsIn[i].equals("-m")){
-				minPlayers= Integer.parseInt(argsIn[i+1]);
-			}
-			if (argsIn[i].equals("-M")){
-				maxPlayers = Integer.parseInt(argsIn[i+1]);
-			}
-			if (argsIn[i].equals("-t")){
-				timeToWait= Integer.parseInt(argsIn[i+1]); 
-			}
-			if (argsIn[i].equals("-a")){
-				atcnt = Integer.parseInt(argsIn[i+1]); 
-			}
-		}
-		System.out.println(String.format("port = %d min = %d max %d time %d kicked %d", portNum, minPlayers, maxPlayers, timeToWait, atcnt));
-	}
 
 
 	//---------------------------------------------------------------------------
@@ -198,20 +226,6 @@ public class Game {
 		playerMap.remove(playerID);
 	}
 	
-	public void startTime(){
-		startLobbyTime =  System.currentTimeMillis( );
-	}
-
-	//public void endTime(){
-	//	endLobbyTime =  System.currentTimeMillis( );
-	//}
-	
-	public int elapsedTime(long time){
-		long temp = System.currentTimeMillis( ) - time;
-		int elapsed = (int) (temp/1000) % 60 ;
-		return elapsed;
-	}
-	
 	public int getPlayerCount() {
 		// Uncomment to test. 
 		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
@@ -235,9 +249,16 @@ public class Game {
 	//- First, check if there is a message.  Then call the state
 	// and get the message.  Then, reset "has message" to false. 
 	public boolean getHasMessageToAll (){return hasAllMessage;} 
-	public String  getMessageAllPlayers(){return state.sendToAll();}
+	public String  getAllPlayerMessageFromState(){return state.sendToAll();}
 	public void    setHasMessageToAll(boolean reset){hasAllMessage = reset;}
 	public void    setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
+	
+	//work on these
+	public boolean getHasMessageToAllFromGameLogic() {return hasAllMessageGameLogic;}
+	public String  getAllPlayerMessageFromGameLogic(){return messageFromGameLogic;} 
+	public void    setHasMessageToAllFromGameLogic(boolean reset){hasAllMessageGameLogic = reset;}
+	
+	
 	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
 
 	//Returns true if client is a player and false if client is observing

@@ -1,4 +1,6 @@
-Final Liar’s Dice API - Valid Message Conventions Approved by Dr. Meehan.
+Path and package info got messed up with my unit test.
+
+Unit test is here:
 
 package testingPackage;
 //import java.lang.*;
@@ -21,6 +23,11 @@ public class testGame {
 	        }
 }
 
+Put it back in once I figure out package issue. 
+
+///////////////////////////////////////////////////////////////////////
+
+Final Liar’s Dice API - Valid Message Conventions Approved by Dr. Meehan.
 
 
 [msgtype, arg1, arg2, …]

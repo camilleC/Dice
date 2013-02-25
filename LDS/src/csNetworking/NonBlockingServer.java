@@ -126,16 +126,30 @@ public class NonBlockingServer {
 							game.resetPlayerNumWithMessage();
 						}
 
+                        //Message created by a player in a state needs to get sent to all     						
 						if (game.getHasMessageToAll()) {
 
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getMessageAllPlayers())));
+								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
 								}
 							}
 							// Reset for new message.
 							game.setHasMessageToAll(false);
+						}
+						
+						//Message created by the game logic needs to get sent to all
+						if (game.getHasMessageToAllFromGameLogic()) {
+
+							for (Integer j : allClientChannels.keySet()) {
+								//checks to make sure clients who have connected but have not Joined do not receive messages. 
+								if (game.isPlayerValid(j)){
+								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+								}
+							}
+							// Reset for new message.
+							game.setHasMessageToAllFromGameLogic(false);
 						}
 					}
 				}
