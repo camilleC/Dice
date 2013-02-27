@@ -24,6 +24,7 @@ public class Player {
 	private int diceCount = MAX_DICE;
 	private List<Integer> myDice = new ArrayList<Integer>();
 	private int attemptCount;
+	private boolean myTurn = false;
 
 	static Random generator = new Random();
 	// Getters and setters
@@ -37,6 +38,12 @@ public class Player {
 		return name;
 	}
 	
+	
+	public void setMyTurn(boolean turn){
+		myTurn = turn;
+	}
+	
+	public boolean getMyTurn(){return myTurn;}
 	//sets messages to go between the servers.  Not to 
 	//be used for setting commands. 
 	public void setPlayerMessage(String sendMessage){
@@ -58,9 +65,6 @@ public class Player {
 		return playerId;
 	}
 
-	public void setDiceCount(int diceCount) {
-		this.diceCount = diceCount;
-	}
 
 	public int getDiceCount() {
 		return diceCount;
@@ -130,12 +134,25 @@ public class Player {
 		return -1;
 	}
 	
+	public String diceMessage(){
+		String myMessage;
+		StringBuilder sb = new StringBuilder();
+		sb.append("[your_dice, ").append(getDiceCount());
+        for (int i = 1; i < getDiceCount()-1; i++){
+			//System.err.print("dice num" + i+ " value " + myDice.get(i) + "\n");
+        	sb.append(", ").append(myDice.get(i));
+        	}
+	    sb.append("]");	
+		return myMessage = sb.toString();	 
+	}
+	
 	//Pre:  Takes the number of dice the player has
 	//Post: Roles all the dice. 
 	public void rollDice(){
 		int newValue = 1;
 		int min = 1;
 		int max = 6; 
+
 		Integer value;
 		Random r = new Random();
 		
@@ -145,9 +162,11 @@ public class Player {
 		}
 	}
 	
-	//Returns the diceCount after decrementation
+	// TODO: insetead of decrementing count try uinsg myDice.size() after the removal
+	// Returns the diceCount after decrementation
 	public int decrementDice(){		
 		diceCount = diceCount -1;
+		myDice.remove(0); // remove the first dice, shifts all otherds to the left. 
         return diceCount;
 	}
 }

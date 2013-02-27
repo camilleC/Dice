@@ -151,6 +151,20 @@ public class NonBlockingServer {
 							// Reset for new message.
 							game.setHasMessageToAllFromGameLogic(false);
 						}
+						
+						if (game.getDiceMsg()) {
+
+							for (Integer j : allClientChannels.keySet()) {
+								//checks to make sure clients who have connected but have not Joined do not receive messages. 
+								if (game.isPlayerInRound(j)){
+								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getPlayerDiceMessageFromState(j))));
+								}
+							}
+							// Reset for new message.
+							game.setDiceMsg();
+						}
+						
+						
 					}
 				}
 			}

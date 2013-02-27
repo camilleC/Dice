@@ -8,6 +8,8 @@ package csNetworking;
  *             Sends the messages to the clients.
  *             Calls appropriate state to take action on player message.   
  *             Sends player messages back to the server     
+ * NOTE: Using an array of length 30 (max num players) would be more efficient but
+ *       I've never used hashMap in Java so I want to learn how to work with it.
  * NOTE: Clients are socket connects representing players.
  *       Players are objects in the game.  There is one player per socket connection.
  *        
@@ -27,17 +29,22 @@ public class Game {
 	//private long endLobbyTime;  
 	private int atcnt;
 	private boolean timerOn = false;
+	private boolean sendRoundMsg = false;
+	private boolean sendDiceMsg = false;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
 	private boolean hasAllMessageGameLogic = false;
 	private String messageFromGameLogic;
-	private Map<Integer, Player> playerMap= new HashMap<Integer, Player>();
+	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //LinkedHashMap will maintain insertion order for iteration purposes. 
+	//private ListIterator iterator = playerMap.hasNext question for Dr. Reedy
+	private Iterator iterator = playerMap.iterator()//method does not exist.  Ask Dr. Reedy
 	private State stateLobby;	
 	private State stateInGame;
 	private State stateTimerLobby;
 	private GameState nextState;
 	private NonBlockingServer server;
 	private State state; 
+	private int whoseTurn = 0;
 
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
@@ -70,8 +77,8 @@ public class Game {
 	*/
 	private void gameLogic(int clientId, String[] request){
 		
-		//TODO this will cause a bug b/c if there are only three people playing it will allways be true.  Through in a boolean to make sure this gets triggerd once per game. 
-	    if (getPlayerCount() == minPlayers){
+		//TODO wDoes this compare memory locations or the values at the address //this.state == stateTimerLobby
+	    if ((getPlayerCount() == minPlayers) && (timerOn == false)){
            state = stateTimerLobby;
            timerOn = true;
            sendTimerMessage();
@@ -82,10 +89,19 @@ public class Game {
 	    //This will start the "round" and flip timer back to off. 
 	    if (timerOn & elapsedTime(startLobbyTime)>= timeToWait){
 	    	state = stateInGame;
+	    	sendRoundMsg = true;
 	    	timerOn = false;
 	    } 
 	    
+	    if (sendRoundMsg) {
+	    	//send everyone round start message
+	    	roundStartMsg();
+	    	sendRoundMsg = false;
+	    	sendDiceMsg= true;
+	    }
 	    
+	    
+	    //calculate who's turn.  
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
@@ -147,8 +163,45 @@ public class Game {
 		return elapsed;
 	}
 	
+	/*
+	 * TODO: Test this with differnet dice values. 
+      [round_start,player_count,player1#, p1_diceno,..., playern#, pn_diceno]
+      Informs everyone of all the players’ dice counts
+      Sample (4 players. p1 has 5 dice, p3 has 5, etc): [round_start, 4,1,5,3,4,4,5,5,4] 
+	 * */
+	
+	private String roundStartMsg(){
+		StringBuilder sb = new StringBuilder();
+		sb.append("[round_start, ").append(getPlayerCount());
+		
+        for (int i = 0; i < getPlayerCount(); i++){
+        	if(isPlayerValid(i)){
+        	//TODO: move this.  rollDice shouldn't be here. at start of each round player rolls the dice	
+            playerMap.get(i).rollDice();
+			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getDiceCount()); 
+        	}
+		} 
+		
+        sb.append("] [player_turn, " + getPlayerTurn() + "]");
+		messageFromGameLogic = sb.toString();
+		setHasMessageToAllFromGameLogic(true);
+		return messageFromGameLogic;		
+	}
+	
+	public int getPlayerTurn(){
+		return whoseTurn;
+	}
+	
+	public void nextPlayerTurn(int current){
+		   if (getPlayerCount() == current)
+			   current = 0;
+	       if (isPlayerValid(current)){
+	    	   
+	       } 
+	            whoseTurn = current;
+	}
 	//===============================================================
-	//      Public methods
+	//      Public methods  --why are there some privates here? Fix!
 	//===============================================================
 	
 	
@@ -165,6 +218,18 @@ public class Game {
 		return valid;
 		}
     
+	//Client is playing game, not just observing. 
+	public boolean isPlayerInRound(int id){
+		boolean valid = false;
+		if ((playerMap.get(id).getWaitingStatus() == PlayerStatus.PLAYING) & playerMap.containsKey(id)){
+			valid = true;
+		}
+	
+		return valid;
+		}
+	
+	
+	
 	/*Rolls all dice held by a player*/
 	public void rollDice(int id){
 		playerMap.get(id).rollDice();
@@ -226,6 +291,9 @@ public class Game {
 		playerMap.remove(playerID);
 	}
 	
+	/*
+	 * Does not count players who have connected but are not joined. 
+	 * */
 	public int getPlayerCount() {
 		// Uncomment to test. 
 		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
@@ -240,25 +308,32 @@ public class Game {
 		//System.out.print("Size of playing/waiting palyers is:  :" + count + "\n");
 		return count;
 	}
-
+	
 	//==============================================================
 	//             Getters and Setters
 	//==============================================================
 	
-	//- Three methods are needed to send messages to all players.
-	//- First, check if there is a message.  Then call the state
-	// and get the message.  Then, reset "has message" to false. 
+
+	//Messages from a sate
 	public boolean getHasMessageToAll (){return hasAllMessage;} 
 	public String  getAllPlayerMessageFromState(){return state.sendToAll();}
 	public void    setHasMessageToAll(boolean reset){hasAllMessage = reset;}
 	public void    setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
 	
-	//work on these
+	//Messages from the game to all clients
 	public boolean getHasMessageToAllFromGameLogic() {return hasAllMessageGameLogic;}
 	public String  getAllPlayerMessageFromGameLogic(){return messageFromGameLogic;} 
 	public void    setHasMessageToAllFromGameLogic(boolean reset){hasAllMessageGameLogic = reset;}
+	/*public String getPlayerTurnMessageFromGameLogic(){
+		String turnMsg =  null;
+		 if isPlayerInRound()
+		return turnMsg;
+	}*/
 	
-	
+	//Messages from the game to each client
+	public void  setDiceMsg(){sendDiceMsg = false;}
+	public boolean  getDiceMsg(){return sendDiceMsg;}
+	public String getPlayerDiceMessageFromState(int id){return playerMap.get(id).diceMessage();}
 	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
 
 	//Returns true if client is a player and false if client is observing
