@@ -51,7 +51,7 @@ public class StateLobby implements State{
 	
 	
 	
-	public int bid(Map<Integer, Player> players, int id, String[] request){return 0;}
+	public int bid(int id, String[] request){return 0;}
 	public int challenge(Map<Integer, Player> players, int id, String[] request){return 0;}
 
 	public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}

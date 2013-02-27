@@ -35,9 +35,8 @@ public class Game {
 	private boolean hasAllMessage = false;
 	private boolean hasAllMessageGameLogic = false;
 	private String messageFromGameLogic;
-	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //LinkedHashMap will maintain insertion order for iteration purposes. 
-	//private ListIterator iterator = playerMap.hasNext question for Dr. Reedy
-	private Iterator iterator = playerMap.iterator()//method does not exist.  Ask Dr. Reedy
+	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
+	private Iterator iterator = playerMap.keySet().iterator();
 	private State stateLobby;	
 	private State stateInGame;
 	private State stateTimerLobby;
@@ -118,7 +117,7 @@ public class Game {
 		case QUIT: 
 			state.quit(clientId);
 		case BID:
-			state.bid(playerMap, clientId, request);
+			state.bid(clientId, request);
 			break;
 		case CHALLENGE:
 			state.challenge(playerMap, clientId, request);
@@ -192,13 +191,22 @@ public class Game {
 		return whoseTurn;
 	}
 	
-	public void nextPlayerTurn(int current){
-		   if (getPlayerCount() == current)
-			   current = 0;
-	       if (isPlayerValid(current)){
-	    	   
-	       } 
-	            whoseTurn = current;
+	/**Determines next palyer's turn.  If the end of list is reached
+	* Turn is equal to the first entry of the list and roundMsg() is signaled. 
+	*/
+	public void nextPlayerTurn(int current) {
+		Player temp;
+		if (iterator.hasNext() == false) {
+			iterator = playerMap.keySet().iterator();
+			temp = (Player) iterator.next();
+			whoseTurn = temp.getPlayerId();
+			sendRoundMsg = true;
+		} else {
+			iterator = playerMap.keySet().iterator();
+			temp = (Player) iterator.next();
+			whoseTurn = temp.getPlayerId();
+		}
+
 	}
 	//===============================================================
 	//      Public methods  --why are there some privates here? Fix!

@@ -23,8 +23,9 @@ public class Player {
 	private int MAX_DICE = 6;
 	private int diceCount = MAX_DICE;
 	private List<Integer> myDice = new ArrayList<Integer>();
+	private List<Integer> myBids = new ArrayList<Integer>();
 	private int attemptCount;
-	private boolean myTurn = false;
+	//private boolean myTurn = false;
 
 	static Random generator = new Random();
 	// Getters and setters
@@ -37,13 +38,20 @@ public class Player {
 	public String getName() {
 		return name;
 	}
+
+	public void setBid(String[] bids){
+		for (int i = 0; i <= bids.length; i++) {
+			myBids.add(Integer.parseInt(bids[i]));
+		   }
+		}
 	
+	public List<Integer> getBid(){return myBids;}
 	
-	public void setMyTurn(boolean turn){
-		myTurn = turn;
-	}
+	//public void setMyTurn(boolean turn){
+	//	myTurn = turn;
+	//}
 	
-	public boolean getMyTurn(){return myTurn;}
+	///public boolean getMyTurn(){return myTurn;}
 	//sets messages to go between the servers.  Not to 
 	//be used for setting commands. 
 	public void setPlayerMessage(String sendMessage){

@@ -20,7 +20,7 @@ public interface State {
 	
 	public int join(int id, String[] request);
 	public void quit(int id);
-	public int bid(Map<Integer, Player> players, int id, String[] request);
+	public int bid(int id, String[] request);
 	public int challenge(Map<Integer, Player> players, int id, String[] request);
 	public String sendToClient(Map<Integer, Player> players, int id);
 	public String sendToAll();
