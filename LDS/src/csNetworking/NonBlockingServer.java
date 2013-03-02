@@ -105,19 +105,20 @@ public class NonBlockingServer {
 					}
 					buffer.flip();
 					String request = decoder.decode(buffer).toString();
-					game.setMessage(((Integer) key.attachment()).intValue(),
-							request);
-
+					
+					game.setMessage(((Integer) key.attachment()).intValue(),request);
+					//System.err.print(request);
 					buffer.clear();
+					
 					if (request.trim().equals("quit")) {
 						client.write(encoder.encode(CharBuffer.wrap("Bye.")));
-						// key.cancel();
-						// client.close();
+						key.cancel();
+						client.close();
 						// didn't get a quit message.
 					} else {
 						int num = ((Integer) key.attachment()).intValue();
 						String response = new String();
-
+                        
 						int temp = game.getPlayerNumWithMessage();
 
 						if (temp != -1) {

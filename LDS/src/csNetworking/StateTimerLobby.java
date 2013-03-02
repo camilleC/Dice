@@ -18,7 +18,6 @@ public class StateTimerLobby implements State{
 	}
 	//TODO Send to many clients
 	public int join(int id, String[] request){
-		System.err.print("in lobby with timer  " + id );
 			StringBuilder sb = new StringBuilder();
 			//String tempMessage = new String();
 			String messageToPlayer = new String();

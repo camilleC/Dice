@@ -38,6 +38,7 @@ public class StateLobby implements State{
 			myGame.clientHasMessage(id);
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
+			System.err.println(messageToAll);
 			return 0;
 			}
 

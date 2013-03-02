@@ -22,9 +22,9 @@ import java.util.*;
 public class Game {
 	private String[] argsIn = null;
 	private int portNum;
-	private int minPlayers = 3; 
+	private int minPlayers = 1; 
 	private int maxPlayers = 30;
-	private int timeToWait = 10; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds 
+	private int timeToWait = 1; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds 
 	private long startLobbyTime;  
 	//private long endLobbyTime;  
 	private int atcnt;
@@ -36,14 +36,14 @@ public class Game {
 	private boolean hasAllMessageGameLogic = false;
 	private String messageFromGameLogic;
 	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
-	private Iterator iterator = playerMap.keySet().iterator();
+	private Iterator iterator = playerMap.keySet().iterator(); //TODO bug maybe b/c it should be .get(key).itterator. 
 	private State stateLobby;	
 	private State stateInGame;
 	private State stateTimerLobby;
 	private GameState nextState;
 	private NonBlockingServer server;
 	private State state; 
-	private int whoseTurn = 0;
+	private int whoseTurn = -1;
 
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
@@ -92,12 +92,12 @@ public class Game {
 	    	timerOn = false;
 	    } 
 	    
-	    if (sendRoundMsg) {
+	    /*if (sendRoundMsg) {
 	    	//send everyone round start message
 	    	roundStartMsg();
 	    	sendRoundMsg = false;
 	    	sendDiceMsg= true;
-	    }
+	    }*/
 	    
 	    
 	    //calculate who's turn.  
@@ -123,6 +123,14 @@ public class Game {
 			state.challenge(playerMap, clientId, request);
 			break;
 		} 
+		
+		if (sendRoundMsg) {
+	    	//send everyone round start message
+	    	roundStartMsg();
+	    	sendRoundMsg = false;
+	    	sendDiceMsg= true;
+	    }
+	    
 	}
 	
 	
@@ -180,7 +188,7 @@ public class Game {
 			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getDiceCount()); 
         	}
 		} 
-		
+        setNextPlayerTurn();
         sb.append("] [player_turn, " + getPlayerTurn() + "]");
 		messageFromGameLogic = sb.toString();
 		setHasMessageToAllFromGameLogic(true);
@@ -188,24 +196,26 @@ public class Game {
 	}
 	
 	public int getPlayerTurn(){
+		if (whoseTurn == -1){
+			iterator = playerMap.keySet().iterator();
+			whoseTurn = (int) iterator.next();
+		}
 		return whoseTurn;
 	}
 	
 	/**Determines next palyer's turn.  If the end of list is reached
 	* Turn is equal to the first entry of the list and roundMsg() is signaled. 
 	*/
-	public void nextPlayerTurn(int current) {
-		Player temp;
+	public void setNextPlayerTurn() {
+	Object temp;
 		if (iterator.hasNext() == false) {
 			iterator = playerMap.keySet().iterator();
-			temp = (Player) iterator.next();
-			whoseTurn = temp.getPlayerId();
-			sendRoundMsg = true;
-		} else {
-			iterator = playerMap.keySet().iterator();
-			temp = (Player) iterator.next();
-			whoseTurn = temp.getPlayerId();
+			System.err.print("itterator is false" + "\n");
 		}
+			temp = iterator.next();
+			whoseTurn = (int) temp;
+			System.err.print(whoseTurn + "\n");
+			//sendRoundMsg = true;
 
 	}
 	//===============================================================
@@ -219,7 +229,7 @@ public class Game {
 	 prevent accessing a null reference.*/ 
 	public boolean isPlayerValid(int id){
 		boolean valid = false;
-		if ((playerMap.get(id).getWaitingStatus() != PlayerStatus.CONNECTED) & playerMap.containsKey(id)){
+		if ((playerMap.get(id).getWaitingStatus() != PlayerStatus.CONNECTED) && playerMap.containsKey(id)){
 			valid = true;
 		}
 	
@@ -229,7 +239,7 @@ public class Game {
 	//Client is playing game, not just observing. 
 	public boolean isPlayerInRound(int id){
 		boolean valid = false;
-		if ((playerMap.get(id).getWaitingStatus() == PlayerStatus.PLAYING) & playerMap.containsKey(id)){
+		if ((playerMap.get(id).getWaitingStatus() == PlayerStatus.PLAYING) && playerMap.containsKey(id)){
 			valid = true;
 		}
 	
@@ -355,7 +365,11 @@ public class Game {
 	public int     getMaxPlayerCnt(){return maxPlayers;}
 	public int     getTimeToWait(){return timeToWait;}
 	public int     getAtcnt(){return atcnt;}
-	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;	}
+	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;}
+	public void setBid(String[] bids, int id){playerMap.get(id).setBid(bids);}
+	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
+	
+	
 	
 }
 

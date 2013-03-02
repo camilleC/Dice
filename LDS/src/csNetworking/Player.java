@@ -38,9 +38,10 @@ public class Player {
 	public String getName() {
 		return name;
 	}
-
+ //TODO i < bids.length-1 b/c i = 0 is null, why??? and i = 1 is "bid".  
 	public void setBid(String[] bids){
-		for (int i = 0; i <= bids.length; i++) {
+		for (int i = 2; i < bids.length-1; i++) {
+			//System.err.print(i + " " + bids[i] + "\n");
 			myBids.add(Integer.parseInt(bids[i]));
 		   }
 		}

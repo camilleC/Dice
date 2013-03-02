@@ -31,12 +31,12 @@ public class StateInGame implements State {
 					sb.append(" , ").append(myGame.getPlayerName(i)).append(", ").append(i);
 	            	}
 				} 
-				sb.append("]\n");
+				sb.append("]");
 				messageToPlayer = sb.toString();
 				myGame.setPlayerMessage(id, messageToPlayer);
 				myGame.clientHasMessage(id);
 				myGame.setHasMessageToAll(true);
-				messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]\n";
+				messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
 				return 0;
 				}
 		
@@ -49,10 +49,26 @@ public class StateInGame implements State {
 		};
 		
 		public int bid(int id, String[] request){
-			
-			
-			
+			StringBuilder sb = new StringBuilder();
+			String messageToPlayer = new String();
+			if (id == myGame.getPlayerTurn()){
+				System.out.print("Bidding active, in game_bid \n");
+				myGame.setBid(request, id);
+				sb.append("[bid_report, " + id);
+				for (int i = 2; i < request.length; i++) {
+					sb.append(", ").append(request[i]);
+				   }
+			    sb.append("]");
+			    messageToPlayer = sb.toString();
+				myGame.setPlayerMessage(id, messageToPlayer);
+				myGame.clientHasMessage(id);
+				myGame.setHasMessageToAll(true);
+			}
+			else
+				invalidMove(id);
 			return 0;}
+		
+		
 		public int challenge(Map<Integer, Player> players, int id, String[] request){return 0;}
 		public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}
 		public String sendToAll(){return messageToAll;}
@@ -70,7 +86,7 @@ public class StateInGame implements State {
 			myGame.setHasMessageToAll(true);
 		};	
 		
-		public void inValidMove(int id){
+		public void invalidMove(int id){
 			int attempts;
 			attempts = myGame.getPlayerAttemptCount(id);
 			attempts = attempts -1;
