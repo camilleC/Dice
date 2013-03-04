@@ -96,7 +96,7 @@ public class NonBlockingServer {
 						continue;
 					int bytesread = client.read(buffer);
 					if (bytesread == -1) {//end of stream, client disconnected
-						System.out.print("in Key cancle and close");
+						System.err.print("in Key cancle and close");
 						key.cancel();
 						client.close();
 						//TODO Crash happens when client termimal terminates. 
@@ -107,7 +107,7 @@ public class NonBlockingServer {
 					String request = decoder.decode(buffer).toString();
 					
 					game.setMessage(((Integer) key.attachment()).intValue(),request);
-					//System.err.print(request);
+					System.out.print(request);
 					buffer.clear();
 					
 					if (request.trim().equals("quit")) {
@@ -133,7 +133,9 @@ public class NonBlockingServer {
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
+							    System.err.print(game.getAllPlayerMessageFromState());
 								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
+								
 								}
 							}
 							// Reset for new message.
@@ -146,7 +148,8 @@ public class NonBlockingServer {
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+									//System.err.print(game.getAllPlayerMessageFromGameLogic());
+									allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
 								}
 							}
 							// Reset for new message.
@@ -186,9 +189,7 @@ public class NonBlockingServer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		allClientChannels.remove(id);
-		game.removePlayer(id);
 	}
 
     //TODO I think I can delete this.  Test this by making a client quit

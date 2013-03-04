@@ -15,16 +15,16 @@ import java.util.*;
 public class Player {
 	private String name;
 	
-	private Game.PlayerStatus waiting = Game.PlayerStatus.CONNECTED; 
+	private Game.PlayerStatus playerStatus = Game.PlayerStatus.CONNECTED; 
 	private String outMessage = new String();
 	private String collectMessage;
 	private String[] finalMessage;
 	private int playerId;
-	private int MAX_DICE = 6;
+	private int MAX_DICE = 6;//TODO remove hard code
 	private int diceCount = MAX_DICE;
 	private List<Integer> myDice = new ArrayList<Integer>();
 	private List<Integer> myBids = new ArrayList<Integer>();
-	private int attemptCount;
+	private int attemptCount = 3; //TODO remove hard code
 	//private boolean myTurn = false;
 
 	static Random generator = new Random();
@@ -63,11 +63,11 @@ public class Player {
 		return outMessage;		
 		}
 
-	public Game.PlayerStatus getWaitingStatus(){
-		return waiting;
+	public Game.PlayerStatus getPlayerStatus(){
+		return playerStatus;
 	}
-	public void setWaitingStatus(Game.PlayerStatus newWaitingStatus){
-		waiting = newWaitingStatus;
+	public void setPlayerStatus(Game.PlayerStatus newWaitingStatus){
+		playerStatus = newWaitingStatus;
 	}
 	
 	public int getPlayerId() {
@@ -144,6 +144,7 @@ public class Player {
 	}
 	
 	public String diceMessage(){
+		//System.err.print("myPlayernum: " + playerId + " myDiceCount " + getDiceCount());
 		String myMessage;
 		StringBuilder sb = new StringBuilder();
 		sb.append("[your_dice, ").append(getDiceCount());
@@ -174,8 +175,18 @@ public class Player {
 	// TODO: insetead of decrementing count try uinsg myDice.size() after the removal
 	// Returns the diceCount after decrementation
 	public int decrementDice(){		
+		if (diceCount >= 1){
 		diceCount = diceCount -1;
-		myDice.remove(0); // remove the first dice, shifts all otherds to the left. 
+		myDice.remove(0); // remove the first dice, shifts all otherds to the left.
+		}
+		else{
+			System.err.print("Error: no dice left to decrement."); //TODO prevent this situation from occuring and then delete his message. 
+		}
+		
+		//They have no more dice left.  Change status to "watching".
+		if (diceCount == 0){
+			setPlayerStatus(Game.PlayerStatus.WATCHING);
+		}
         return diceCount;
 	}
 }

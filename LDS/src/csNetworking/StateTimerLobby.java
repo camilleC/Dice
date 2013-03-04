@@ -22,7 +22,7 @@ public class StateTimerLobby implements State{
 			//String tempMessage = new String();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
-			myGame.setWaitingStatus(id, Game.PlayerStatus.PLAYING);
+			myGame.setPlayerStatus(id, Game.PlayerStatus.PLAYING);
 			sb.append("[state, timer_with_lobby, ").append(id).append(", ").append(myGame.getPlayerCount());
             for (int i = 0; i < myGame.getPlayerCount(); i++){
             
@@ -53,7 +53,13 @@ public class StateTimerLobby implements State{
 	public int challenge(Map<Integer, Player> players, int id, String[] request){return 0;}
 
 	public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}
-	public String sendToAll(){return messageToAll;}
+
+	//Need to reset original message
+	public String sendToAll(){
+	        String temp = messageToAll;		
+			messageToAll = new String();
+			return temp;
+	}
 	public void changeState(Game.GameState newState){}
 }
 	
