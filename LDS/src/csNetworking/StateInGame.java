@@ -43,31 +43,49 @@ public class StateInGame implements State {
 		
 		//if this closes correctly have it send a message first. 
 		//need to remove client from map. 
-		public void quit(int id){
-			messageToAll = new String();
-			myGame.setclientClose(id);
-			myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
-			
-			
-			//If I quit when it is my turn then set the next players turn.  
-			//otherwise let who ever is playing keep thier turn. 
-			if (id == myGame.getPlayerTurn()){
-			 myGame.setNextPlayerTurn();
-			 messageToAll = ("[client_quit, " + id + "] [player_turn, " + myGame.getPlayerTurn() + "]"); //this is repeating the message.  Bad!  Refractor ths.
-				System.err.print("quitting on player turn" + id +  "\n");
+	public void quit(int id) {
+		// ///////////////////////////
+		myGame.turns++; // this is a hack
+		// ////////////////////////////
+		messageToAll = new String(); // DEBUG...could this be causing an empty
+										// string?
+		myGame.setclientClose(id);
+		myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
+
+		// If I quit when it is my turn then set the next players turn.
+		// otherwise let who ever is playing keep thier turn.
+
+		// removing the player made a winner.
+		//if there is a winner say the client quit
+		if (myGame.isWinner() != -1) {
+			messageToAll = ("[client_quit, " + id + "]");
+		} 
+		//if there is not a winner check two conditions.
+		else {
+			//players turn
+			if (id == myGame.getPlayerTurn()) {
+				myGame.setNextPlayerTurn();
+				messageToAll = ("[client_quit, " + id + "] [player_turn, "
+						+ myGame.getPlayerTurn() + "]"); // this is repeating
+															// the message. Bad!
+															// Refractor ths.
+				System.err.print("quitting on player turn" + id + "\n");
+				//not players turn
+			} else {
+				System.err.print("quitting when not player turn" + id + "\n");
+				messageToAll = ("[client_quit, " + id + "]");
 			}
-			else{
-		     System.err.print("quitting when not player turn" + id + "\n");
-			 messageToAll = ("[client_quit, " + id + "]");
-			}
-			myGame.setHasMessageToAll(true);
-		};
+		}
+		myGame.setHasMessageToAll(true);
+	};
 		
 		//Receives players bid.  Sets bid in player object.  Sends a bid report. 
 		//calls for next players turn to be incremented, evaluates for end of round. 
 		public int bid(int id, String[] request){
-
 			if (id == myGame.getPlayerTurn()){
+          /////////////////////////////
+            myGame.turns++; // this is a hack
+           //////////////////////////////
 			  myGame.setNextPlayerTurn(); 
 			  msgBidReport(id, request); //is this the order?
 			}
@@ -103,7 +121,7 @@ public class StateInGame implements State {
 		
 		public int challenge(Map<Integer, Player> players, int id, String[] request){return 0;}
 		public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}
-		//public String sendToAll(){return messageToAll;}
+
 		
 		//Need to reset original message
 		public String sendToAll(){

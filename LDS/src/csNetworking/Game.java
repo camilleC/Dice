@@ -31,6 +31,7 @@ public class Game {
 	private boolean timerOn = false;
 	private boolean sendRoundMsg = false;
 	private int isWinner = -1;
+	private int isLooser = -1;
 	private boolean sendDiceMsg = false;
 	private int playerWithMessage = -1;
 	private boolean hasAllMessage = false;
@@ -47,6 +48,8 @@ public class Game {
 	private State state; 
 	private int whoseTurn = -1;
 	public int firstPlayer = -2; //TODO make this private and put in a getter. 
+	public int turns = 0;
+	public int playersInRound = -2;
 
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
@@ -83,17 +86,21 @@ public class Game {
 	    if ((getPlayerCount() == minPlayers) && (timerOn == false)){
            state = stateTimerLobby;
            timerOn = true;
+           System.err.print("turning timer on \n");
            sendTimerMessage();
            //System.err.print("min players reached");
            startTime();
 		}
 	    //Only check this if the timer has been set (b/c min num of players is reached)
 	    //This will start the "round" and flip timer back to off. 
-	    if (timerOn & elapsedTime(startLobbyTime)>= timeToWait){
-	    	state = stateInGame;
-	    	sendRoundMsg = true;
-	    	timerOn = false;
-	    } 
+		if (state != stateInGame) {
+			if (timerOn & elapsedTime(startLobbyTime) >= timeToWait) {
+				System.err.print("THIS SHOULD ONLY BE SEEN ONCE IN A GAME \n");
+				state = stateInGame;
+				playersInRound = getCountPlayersMakingMoves();
+				sendRoundMsg = true;
+			}
+		}
 	    
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
@@ -121,13 +128,15 @@ public class Game {
 		
 		//at start of game they wont be equal.  Will only be equal at round end. 
 		if (roundEnd()){
-			iswinner();
+			System.err.print("send round end message \n");
+			isWinner();
 			roundEndMessage = true;
 			sendRoundMsg = true;
 		}
 		//Start of round, send initial message out
 		//including players turn.
 		if (sendRoundMsg) {
+			System.err.print("calling round start mesage\n");
 	    	roundStartMsg();
 	    	sendRoundMsg = false;
 	    	sendDiceMsg= true;
@@ -137,19 +146,48 @@ public class Game {
 	//Evaluates if there is a winner.
 	//returns -1 if no winner yet (game still on)
 	//or player number if there is a winner. 
-	private void iswinner(){
-		if (getPlayerCount() == 1){
-	        for (int i = 0; i < getPlayerCount(); i++){
+	public int isWinner(){
+		System.err.print("IN IS WINNER" + "\n");
+		if (getCountPlayersMakingMoves() == 1){
+	        for (int i = 0; i < getCountPlayersMakingMoves(); i++){
 	        	if(isPlayerValid(i)){
 	        		isWinner= i;
+	        		endGame(i);
+	        		System.err.print("YOU WON PLAYER : " + i + "\n");
+	    	    	
 	        	}
 			}
 		}
+		return isWinner;
 	}
+	
+    /*8TODO msg_game_end()
+	[game_end,winner_player#]
+	Summarizes end of game - last player with >= 1 dice remaining
+	Sample: [game_end, 3]
+			*/
+	private void endGame(int winner){
+		messageFromGameLogic =  "[game_end," + winner + "]";
+		setHasMessageToAllFromGameLogic(true);
+
+		//TODO need to reset all values so game can restart here. 
+		timerOn = false; //if there is a winner reset the timer so the lobby with timer can be entered for the next game
+		
+	}
+
+	
+	
+	
+	
+	
+	
+	//if you are back to the first palyer OR if the first palyer quit you are back to the lowest numbered palyer.  Need to check this condition.
 	private boolean roundEnd(){
+		System.err.print("IN ROUND END? "  + "\n");
 		boolean end = false;
-		if (whoseTurn == firstPlayer){
+		if (turns  == playersInRound){
 			end = true;
+			turns = 0; //reset turns
 		}
 		return end;
 	}
@@ -177,6 +215,8 @@ public class Game {
 	}
 	
 	private void sendTimerMessage(){
+		messageFromGameLogic = new String(); 
+        System.err.print("In send timer message \n");
 		messageFromGameLogic = "[timer_start, " + timeToWait + "]";
 	    setHasMessageToAllFromGameLogic(true);
 	}
@@ -198,7 +238,9 @@ public class Game {
 	 * */
 	
 	private void roundStartMsg(){
+		System.err.print("  IN ROUND START MESSSAGE" +  messageFromGameLogic +  " \n");
 		messageFromGameLogic = new String(); //reset to avoid g
+		String tempString = new String();
 		StringBuilder sb = new StringBuilder();
 		sb.append("[round_start, ").append(getPlayerCount());
 		
@@ -212,7 +254,8 @@ public class Game {
         sb.append("]" + getPlayerTurnMessage());
        
         if (roundEndMessage){
-        	messageFromGameLogic = roundEndMessage() + sb.toString();
+        	tempString = sb.toString();
+        	messageFromGameLogic = roundEndMessage() + tempString;
         	if (isWinner != -1){
         		messageFromGameLogic += "[game_end, " + isWinner + "]";
         		isWinner = -1;
@@ -220,14 +263,28 @@ public class Game {
         	roundEndMessage = false;
         }
         else
+	  
         messageFromGameLogic =  sb.toString();
-
 		setHasMessageToAllFromGameLogic(true);
 		return;		
 	}
-	
+
+	//////working on round end message
 	private String roundEndMessage(){
-		String message = "[end of round]";
+		   System.err.print("  IN ROUND END MESSAGE  "+  " \n");
+		String message = new String();
+		StringBuilder sb = new StringBuilder();
+		message = "[round_end, " + isLooser + ", " + getPlayerCount();
+		
+        for (int i = 0; i < getPlayerCount(); i++){
+        	if(isPlayerValid(i)){
+        	//TODO: move this.  rollDice shouldn't be here. at start of each round player rolls the dice	
+            playerMap.get(i).rollDice();
+			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getPlayersDiceMessage()); 
+        	}
+		}
+        sb.append("]  ");  ///this was a plus..now it is apppend.  Will this work? 
+        message = message + sb.toString();
 		return message;
 	}
 	
@@ -262,7 +319,7 @@ public class Game {
 		boolean resetFirstPlayer = false; 
 		//keep looping till valid index is found. 
 		//player > 1 saftey check, infinate loop could happen if there were no players. 
-		while ((!done) && (getPlayerCount() > 1)) {
+		while ((!done) && (getPlayerCount() > 1)) {  //should this just get players who are playing? getCountPlayersMakingMoves() 
 			if (iterator.hasNext() == false) {
 				iterator = playerMap.keySet().iterator();
 				//can only remove players when itterator is remade so do it here
@@ -334,8 +391,6 @@ public class Game {
 		   server.clientClose(id);
 
 	}
-    //TODO implement and write PRE/POST comments
-	private void endGame(){}
 
 
 	//---------------------------------------------------------------------------
@@ -401,6 +456,21 @@ public class Game {
 		return count;
 	}
 	
+	//THIS IS A HACK
+	private int getCountPlayersMakingMoves() {
+		// Uncomment to test. 
+		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
+		//System.out.print("size of palyer map is :" + playerMap.size() + "\n");
+		int count = 0;
+		for (Integer key : playerMap.keySet()){
+			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)){
+				count++;
+			//	System.out.print("name of player waiting : " + playerMap.get(key).getName() + " \n");
+			}
+		}
+		//System.out.print("Size of playing/waiting palyers is:  :" + count + "\n");
+		return count;
+	}
 	
 	
 	//==============================================================

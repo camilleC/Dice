@@ -107,7 +107,7 @@ public class NonBlockingServer {
 					String request = decoder.decode(buffer).toString();
 					
 					game.setMessage(((Integer) key.attachment()).intValue(),request);
-					System.out.print(request);
+					//System.out.print(request);
 					buffer.clear();
 					
 					if (request.trim().equals("quit")) {
@@ -133,9 +133,9 @@ public class NonBlockingServer {
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-							    System.err.print(game.getAllPlayerMessageFromState());
+									System.err.print("created in state"+ game.getAllPlayerMessageFromState() + "\n");
 								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
-								
+							   
 								}
 							}
 							// Reset for new message.
@@ -148,7 +148,7 @@ public class NonBlockingServer {
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-									//System.err.print(game.getAllPlayerMessageFromGameLogic());
+									System.err.print("created in logic" + game.getAllPlayerMessageFromGameLogic() + "\n");
 									allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
 								}
 							}

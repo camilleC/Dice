@@ -18,7 +18,8 @@ public class StateTimerLobby implements State{
 	}
 	//TODO Send to many clients
 	public int join(int id, String[] request){
-			StringBuilder sb = new StringBuilder();
+		    messageToAll = new String();//ADDED MON NIGHT
+		    StringBuilder sb = new StringBuilder();
 			//String tempMessage = new String();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
@@ -56,9 +57,8 @@ public class StateTimerLobby implements State{
 
 	//Need to reset original message
 	public String sendToAll(){
-	        String temp = messageToAll;		
-			messageToAll = new String();
-			return temp;
+	       return messageToAll;		
+
 	}
 	public void changeState(Game.GameState newState){}
 }

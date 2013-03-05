@@ -38,7 +38,7 @@ public class StateLobby implements State{
 			myGame.clientHasMessage(id);
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
-			System.err.println(messageToAll);
+			//System.err.println("bar " + messageToAll);
 			return 0;
 			}
 
@@ -59,9 +59,7 @@ public class StateLobby implements State{
 	//public String sendToAll(){return messageToAll;}
 	//Need to reset original message
 	public String sendToAll(){
-	        String temp = messageToAll;		
-			messageToAll = new String();
-			return temp;
+			return messageToAll;
 	}
 	
 	public void changeState(Game.GameState newState){

@@ -156,6 +156,23 @@ public class Player {
 		return myMessage = sb.toString();	 
 	}
 	
+	//can use this for end of round dice counts
+	public String getPlayersDiceMessage(){
+		//System.err.print("myPlayernum: " + playerId + " myDiceCount " + getDiceCount());
+		String myMessage;
+		StringBuilder sb = new StringBuilder();
+		sb.append(getDiceCount());
+        for (int i = 1; i < getDiceCount()-1; i++){
+			//System.err.print("dice num" + i+ " value " + myDice.get(i) + "\n");
+        	sb.append(", ").append(myDice.get(i));
+        	}
+        myMessage = sb.toString();	 
+		return myMessage;
+	}
+	
+	
+	
+	
 	//Pre:  Takes the number of dice the player has
 	//Post: Roles all the dice. 
 	public void rollDice(){
