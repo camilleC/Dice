@@ -50,10 +50,30 @@ public class StateLobby implements State{
 		myGame.setHasMessageToAll(true);
 	};
 	
+	public void invalidMove(int id){
+		int attempts;
+		attempts = myGame.getPlayerAttemptCount(id);
+		attempts = attempts -1;
+		
+		if (attempts == 0){
+			kicked(id);
+		}
+		}
 	
-	
-	public int bid(int id, String[] request){return 0;}
-	public int challenge(Map<Integer, Player> players, int id, String[] request){return 0;}
+		
+		public void kicked(int id){
+			myGame.setclientClose(id);
+			messageToAll = ("[client_kicked, " + id + "]");
+			myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
+			if (id == myGame.getPlayerTurn()){ //if the current player gets kicked signal the next player that it is thier turn. 
+				 myGame.setNextPlayerTurn(); 
+			     myGame.setHasMessageToAll(true);
+			}
+		}
+		
+	//players will recieve invalid move message if they bid or challenge while in the lobby	
+	public int bid(int id, String[] request){invalidMove(id);return 0;}
+	public int challenge(Map<Integer, Player> players, int id, String[] request){invalidMove(id);return 0;}
 
 	public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}
 	//public String sendToAll(){return messageToAll;}

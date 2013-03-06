@@ -20,11 +20,12 @@ public class Player {
 	private String collectMessage;
 	private String[] finalMessage;
 	private int playerId;
-	private int MAX_DICE = 6;//TODO remove hard code
+	private int MAX_DICE = 5;//TODO remove hard code
 	private int diceCount = MAX_DICE;
 	private List<Integer> myDice = new ArrayList<Integer>();
 	private List<Integer> myBids = new ArrayList<Integer>();
 	private int attemptCount = 3; //TODO remove hard code
+	private boolean hasGone = false;
 	//private boolean myTurn = false;
 
 	static Random generator = new Random();
@@ -39,6 +40,7 @@ public class Player {
 		return name;
 	}
  //TODO i < bids.length-1 b/c i = 0 is null, why??? and i = 1 is "bid".  
+	//change this, a bid is only two numbers.  Opps!
 	public void setBid(String[] bids){
 		for (int i = 2; i < bids.length-1; i++) {
 			//System.err.print(i + " " + bids[i] + "\n");
@@ -92,6 +94,9 @@ public class Player {
 		return attemptCount;
 	}
 
+	public boolean getHasGone(){return hasGone;}
+	public void setHasGone(boolean newVal){hasGone = newVal;} 
+	
 	// Class methods
 	public String bid() {
 		String message = null;

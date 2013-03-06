@@ -12,9 +12,14 @@ package csNetworking;
  *       I've never used hashMap in Java so I want to learn how to work with it.
  * NOTE: Clients are socket connects representing players.
  *       Players are objects in the game.  There is one player per socket connection.
- *        
+ *
+ *        "Hash table and linked list implementation of the Map interface, with predictable iteration order."
  *TODO does game shut of the server or does main? I think main does b/c main starts the server.   
+ *TODO change any for loop that uses an i to index into player map to  "for (Integer key : playerMap.keySet()"
+ *This will prevent accidentally accessing an object that isn't there. Also can't use 'i' b/c player numbers are crazy. 
+ *
  * */
+
 
 import java.io.*;
 import java.util.*;
@@ -23,8 +28,8 @@ public class Game {
 	private String[] argsIn = null;
 	private int portNum;
 	private int minPlayers = 2; 
-	private int maxPlayers = 30;
-	private int timeToWait = 1; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds 
+	int maxPlayers = 30;
+	private int timeToWait = 5; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds 
 	private long startLobbyTime;  
 	//private long endLobbyTime;  
 	private int atcnt;
@@ -39,6 +44,7 @@ public class Game {
 	private boolean hasAllMessageGameLogic = false;
 	private String messageFromGameLogic;
 	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
+	private ArrayList<Integer> turn = newArrayList<Integer>(); //TODO: Determine time space complexity
 	private Iterator iterator = playerMap.keySet().iterator(); //TODO bug maybe b/c it should be .get(key).itterator. 
 	private State stateLobby;	
 	private State stateInGame;
@@ -48,8 +54,9 @@ public class Game {
 	private State state; 
 	private int whoseTurn = -1;
 	public int firstPlayer = -2; //TODO make this private and put in a getter. 
-	public int turns = 0;
 	public int playersInRound = -2;
+	private int lastBidVal;  //should these be static?  
+	private int lastBidFace;
 
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
@@ -97,7 +104,7 @@ public class Game {
 			if (timerOn & elapsedTime(startLobbyTime) >= timeToWait) {
 				System.err.print("THIS SHOULD ONLY BE SEEN ONCE IN A GAME \n");
 				state = stateInGame;
-				playersInRound = getCountPlayersMakingMoves();
+				playersInRound = getCountPlayersMakingMoves(); // count of players making moves at the start of game. 
 				sendRoundMsg = true;
 			}
 		}
@@ -125,14 +132,22 @@ public class Game {
 			state.challenge(playerMap, clientId, request);
 			break;
 		} 
-		
-		//at start of game they wont be equal.  Will only be equal at round end. 
-		if (roundEnd()){
+	
+	
+		if (roundEnd()) {
 			System.err.print("send round end message \n");
-			isWinner();
-			roundEndMessage = true;
-			sendRoundMsg = true;
+
+			// If no winner reset for next round
+			if (-1 == isWinner()) {
+				reSetTurns();
+				roundEndMessage = true;
+				sendRoundMsg = true;
+				lastBidVal = 0;
+				lastBidFace = 0;
+			}
 		}
+			
+		
 		//Start of round, send initial message out
 		//including players turn.
 		if (sendRoundMsg) {
@@ -146,16 +161,15 @@ public class Game {
 	//Evaluates if there is a winner.
 	//returns -1 if no winner yet (game still on)
 	//or player number if there is a winner. 
-	public int isWinner(){
+	public int isWinner() {
 		System.err.print("IN IS WINNER" + "\n");
-		if (getCountPlayersMakingMoves() == 1){
-	        for (int i = 0; i < getCountPlayersMakingMoves(); i++){
-	        	if(isPlayerValid(i)){
-	        		isWinner= i;
-	        		endGame(i);
-	        		System.err.print("YOU WON PLAYER : " + i + "\n");
-	    	    	
-	        	}
+		if (getCountPlayersMakingMoves() == 1) {
+			for (Integer key : playerMap.keySet()) {
+				if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)) {
+					isWinner = key;
+					endGame(key);
+					System.err.print("YOU WON PLAYER : " + key + "\n");
+				}
 			}
 		}
 		return isWinner;
@@ -167,9 +181,18 @@ public class Game {
 	Sample: [game_end, 3]
 			*/
 	private void endGame(int winner){
+		messageFromGameLogic = new String();
 		messageFromGameLogic =  "[game_end," + winner + "]";
 		setHasMessageToAllFromGameLogic(true);
-
+		
+		//reset game to original status. 
+		//
+		this.state = stateLobby;
+		isWinner = -1;
+		firstPlayer = -2; //TODO make this private and put in a getter. 
+		playersInRound = -2;
+		lastBidVal = 0;  //should these be static?  
+		lastBidFace = 0;
 		//TODO need to reset all values so game can restart here. 
 		timerOn = false; //if there is a winner reset the timer so the lobby with timer can be entered for the next game
 		
@@ -181,16 +204,42 @@ public class Game {
 	
 	
 	
-	//if you are back to the first palyer OR if the first palyer quit you are back to the lowest numbered palyer.  Need to check this condition.
-	private boolean roundEnd(){
-		System.err.print("IN ROUND END? "  + "\n");
-		boolean end = false;
-		if (turns  == playersInRound){
-			end = true;
-			turns = 0; //reset turns
+	//
+   // returns true if all players have gone.  Else, returns false. 
+	private boolean roundEnd() {
+		System.err.print("IN ROUND END? " + "\n");
+		boolean end = true;
+		for (Integer key : playerMap.keySet()){
+			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == false )){
+            end = false;
+            System.err.print("IN ROUND END, player has not gone " + key + "\n");
+			}
+				
 		}
 		return end;
 	}
+	//Resets all turns to false so that players can start a new round. 
+	private void reSetTurns() {
+		System.err.print("IN RESET TURNS? " + "\n");
+		for (Integer key : playerMap.keySet()){
+			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)){
+				playerMap.get(key).setHasGone(false);
+			}
+				
+		}
+	}
+	
+	//players who joined while the game was in round need to be switched to playing. 
+	private void reSetStatus() {
+		System.err.print("IN RESET TURNS? " + "\n");
+		for (Integer key : playerMap.keySet()){
+			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.WATCHING)){
+				playerMap.get(key).setPlayerStatus(PlayerStatus.PLAYING);
+			}
+				
+		}
+	}
+	
 	
 	private void parseCommandLine(){
 		int i = 0;
@@ -437,40 +486,30 @@ public class Game {
 			}
 	}
 	
-	/*
-	 * Counts players who are playing or watching
-	 * TODO this was just != connect.  Did I make a bug by chaning it?  
-	 * */
+
 	public int getPlayerCount() {
-		// Uncomment to test. 
-		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
-		//System.out.print("size of palyer map is :" + playerMap.size() + "\n");
+
 		int count = 0;
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)||(playerMap.get(key).getPlayerStatus() == PlayerStatus.WATCHING)){
 				count++;
-			//	System.out.print("name of player waiting : " + playerMap.get(key).getName() + " \n");
 			}
 		}
-		//System.out.print("Size of playing/waiting palyers is:  :" + count + "\n");
 		return count;
 	}
 	
-	//THIS IS A HACK
+
 	private int getCountPlayersMakingMoves() {
-		// Uncomment to test. 
-		//System.out.print("NEW CALL TO PLAYER COUNT"  + "\n");
-		//System.out.print("size of palyer map is :" + playerMap.size() + "\n");
+
 		int count = 0;
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)){
 				count++;
-			//	System.out.print("name of player waiting : " + playerMap.get(key).getName() + " \n");
 			}
 		}
-		//System.out.print("Size of playing/waiting palyers is:  :" + count + "\n");
 		return count;
 	}
+	
 	
 	
 	//==============================================================
@@ -515,8 +554,14 @@ public class Game {
 	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;}
 	public void setBid(String[] bids, int id){playerMap.get(id).setBid(bids);}
 	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
-	
-	
-	
+	public int getLastBidVal() {return lastBidVal;}
+	public int getLastBidFace() {return lastBidFace;}
+	public void setLastBidVal(int currentBidVal) {lastBidVal = currentBidVal;}
+	public void setLastBidFace(int currentBidFace) {lastBidFace = currentBidFace;}
+	public boolean getHasGone(int id){
+		return playerMap.get(id).getHasGone();
+	}//   
+	public void setHasGone(int id, boolean newVal){playerMap.get(id).setHasGone(newVal);}//  
+
 }
 
