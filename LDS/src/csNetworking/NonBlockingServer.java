@@ -26,21 +26,19 @@ package csNetworking;
 
 import java.util.*;
 import java.io.*;
-import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.charset.*;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
+
 
 
 public class NonBlockingServer {
 
 	private int port;
 	private Game game; //
-	private boolean isClientClosed = false;
 	private Map<Integer, SocketChannel> allClientChannels = new HashMap<Integer, SocketChannel>();
 
 	public NonBlockingServer(int myPort, Game myGame) {
@@ -66,16 +64,21 @@ public class NonBlockingServer {
 		server.socket().bind(new java.net.InetSocketAddress(port));
 		server.configureBlocking(false);
 		SelectionKey serverkey = server.register(selector,
-				SelectionKey.OP_ACCEPT);
+				SelectionKey.OP_ACCEPT, SelectionKey.OP_READ);
 
 		while (!exit) {
-			selector.select();
-			Set keys = selector.selectedKeys();
-
+			//selector.select();  //This will cause it to block
+			selector.select((long)game.timeToWait);  // This lets it timeout so that it isn't blocking on a connection
+			game.timeOutOver();
+			Set keys = selector.selectedKeys(); //****ANDY CHECK THIS IT BLOCKS****  It will wait for any connected client to send a message.  
+		    System.err.print("bar\n");          //  I can't send messages out arbitrarily b/c of this....as soon as a client sends me a   
+		                                        //  message then it gets past the selector and I can spam ALL my clients with messages but 
+		                                        //I need to figure out how to prevent this from blocking.    
+		                                        
 			for (Iterator i = keys.iterator(); i.hasNext();) {
 				SelectionKey key = (SelectionKey) i.next();
 				i.remove();
-
+                System.err.print("foo\n");
 				if (key == serverkey) {
 					if (key.isAcceptable()) {
 						SocketChannel client = server.accept();
@@ -99,8 +102,6 @@ public class NonBlockingServer {
 						System.err.print("in Key cancle and close");
 						key.cancel();
 						client.close();
-						//TODO Crash happens when client termimal terminates. 
-						// Call method ClientClose on the key and remove client from list. 
 						continue;
 					}
 					buffer.flip();
@@ -116,7 +117,7 @@ public class NonBlockingServer {
 						client.close();
 						// didn't get a quit message.
 					} else {
-						int num = ((Integer) key.attachment()).intValue();
+						//int num = ((Integer) key.attachment()).intValue();
 						String response = new String();
                         
 						int temp = game.getPlayerNumWithMessage();
@@ -191,17 +192,4 @@ public class NonBlockingServer {
 		}
 		allClientChannels.remove(id);
 	}
-
-    //TODO I think I can delete this.  Test this by making a client quit
-	//with code commented out.  Will program still work? 
-	public boolean setClientClose() {
-		return isClientClosed = true;
-	}
-
-	/*  Handles all client connections.
-	 *  Calls game methods and sends client messages to the game.
-	 *  Receives messages from game and sends them to clients. 
-	 *  TODO Must add try catch blocks!  It should not throw exceptions 
-	 *  it should catch them. 
-	 */
 }

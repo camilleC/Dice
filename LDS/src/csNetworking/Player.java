@@ -157,8 +157,9 @@ public class Player {
 			//System.err.print("dice num" + i+ " value " + myDice.get(i) + "\n");
         	sb.append(", ").append(myDice.get(i));
         	}
-	    sb.append("]");	
-		return myMessage = sb.toString();	 
+	    sb.append("]");
+	    myMessage = sb.toString();
+		return myMessage;
 	}
 	
 	//can use this for end of round dice counts
@@ -181,7 +182,6 @@ public class Player {
 	//Pre:  Takes the number of dice the player has
 	//Post: Roles all the dice. 
 	public void rollDice(){
-		int newValue = 1;
 		int min = 1;
 		int max = 6; 
 

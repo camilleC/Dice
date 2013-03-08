@@ -1,0 +1,28 @@
+  This is how to implement setNextPlayeTurn using an iterator over the player map.
+  //add this iterator to game to complete implementation.
+  //private Iterator iterator = playerMap.keySet().iterator(); //TODO bug maybe b/c it should be .get(key).itterator.  
+   
+    /*public void setNextPlayerTurn() {
+        Object temp = null;
+        boolean done = false;
+        boolean resetFirstPlayer = false; 
+
+        while ((!done) && (getPlayerCount() > 1)) {  //should this just get players who are playing? getCountPlayersMakingMoves() 
+            if (iterator.hasNext() == false) {
+                iterator = playerMap.keySet().iterator();
+                resetFirstPlayer  = true; 
+            }
+        
+            temp = iterator.next();
+            if (isPlayerInRound((int) temp)){
+                if (resetFirstPlayer){
+                    firstPlayer = (int)temp;
+                    resetFirstPlayer = false;
+                } 
+                done = true;
+            }
+        }
+
+        whoseTurn = (int) temp;
+
+    }*/

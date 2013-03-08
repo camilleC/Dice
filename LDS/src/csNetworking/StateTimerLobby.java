@@ -9,7 +9,6 @@ import java.util.*;
 
 public class StateTimerLobby implements State{
 	private Game myGame;
-	private boolean timerOn = false;
 	private String messageToAll;
 
 	//this constructs a lobby for a specified game

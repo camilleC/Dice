@@ -12,7 +12,6 @@ import java.util.*;
 public class StateInGame implements State {
 	
 		private Game myGame;
-		private boolean timerOn = false;
 		private String messageToAll = new String();
 
 
@@ -89,11 +88,12 @@ public class StateInGame implements State {
 			// it is the players turn and bid is valid
 			if (id == myGame.getPlayerTurn()
 					&& isBidValid(bidDiceCount, bidDiceVal)) {
+				System.err.print(" *****  Just set to true" + id + "\n");
+				myGame.setHasGone(id, true);
 				myGame.setNextPlayerTurn();
 				msgBidReport(id, request);
-				myGame.setHasGone(id, true);
 			} else {
-				System.err.print("invalid move not your turn" + id + " !\n");
+				System.err.print("invalid your turn" + id + " game thinks this turn "+ myGame.getPlayerTurn() + "!\n");
 				invalidMove(id);
 			}
 		}

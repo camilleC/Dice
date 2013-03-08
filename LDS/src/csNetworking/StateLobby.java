@@ -11,8 +11,6 @@ import java.util.*;
 
 public class StateLobby implements State{
 	private Game myGame;
-	private boolean timerOn = false;
-	private enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	private String messageToAll;
 
 	//this constructs a lobby for a specified game

@@ -4,7 +4,7 @@ package csNetworking;
  * TODO should I get rid of this class and put its functionality into the game? 
  * 
  * */
-import java.util.ArrayList;
+
 
 
 //need to handle case where the message is not correct. 
