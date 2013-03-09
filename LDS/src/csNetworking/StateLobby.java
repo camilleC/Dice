@@ -22,6 +22,7 @@ public class StateLobby implements State{
 			invalidMove(id);
 		}
 		
+		    messageToAll = new String();// ADDED FRIDAY NIGHT
 			StringBuilder sb = new StringBuilder();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
@@ -39,7 +40,7 @@ public class StateLobby implements State{
 			myGame.clientHasMessage(id);
 			myGame.setHasMessageToAll(true);
 			messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
-			//System.err.println("bar " + messageToAll);
+			System.err.println("Lobby Join" + messageToAll);
 			return 0;
 			}
 

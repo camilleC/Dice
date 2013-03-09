@@ -45,6 +45,8 @@ public class StateTimerLobby implements State {
 		myGame.setHasMessageToAll(true);
 		messageToAll = "[client_joined, " + myGame.getPlayerName(id) + " , "
 				+ id + "]";
+		
+		System.err.println("Lobby Timer Join " + messageToAll);
 		return 0;
 	}
 
@@ -59,6 +61,7 @@ public class StateTimerLobby implements State {
 	public void challenge(int id) {invalidMove(id);}
 
 	public void quit(int id){
+		messageToAll = new String();
 		System.out.print("in quit method\n");
 		myGame.setclientClose(id);
 		messageToAll = ("[client_quit, " + id + "]");

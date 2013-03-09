@@ -41,6 +41,8 @@ public class StateInGame implements State {
 				myGame.clientHasMessage(id);
 				myGame.setHasMessageToAll(true);
 				messageToAll = "[client_joined, " +  myGame.getPlayerName(id) + " , " + id + "]";
+				
+				System.err.println("Game Join" + messageToAll);
 				return 0;
 				}
 		
@@ -55,6 +57,7 @@ public class StateInGame implements State {
 
 
 			//did getting the next player cause a winner? 
+		    //If players turn
 			if (id == myGame.getPlayerTurn()) {
 				if (myGame.isWinner() == -1) {
 			    	myGame.setNextPlayerTurn();
@@ -65,16 +68,11 @@ public class StateInGame implements State {
 				//someone quit and now there is a winner.
 			    //the call to isWinner above will build a message. 
 			}
-			else {
-				if (myGame.isWinner() != -1){
-				 // A winner was created when the client quit. 
-				}
-				else{
-				//quitting had no effect on winning. 	
+			else { //if not players turn 
+				myGame.isWinner();	
 				messageToAll = ("[client_quit, " + id + "]");
 				myGame.setHasMessageToAll(true);
 				}
-			}
 
 	};
 	/*	

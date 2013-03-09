@@ -61,6 +61,7 @@ public class Game {
 	private int lastBidFace;
     private int playerToKick;
     private boolean kickMe = false;
+    private boolean needsRestart = false;
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
 	public enum PlayerStatus{CONNECTED, PLAYING, WATCHING, REMOVE};
@@ -91,6 +92,10 @@ public class Game {
 	*  be reset to "LOBBY"
 	*/
 	private void gameLogic(int clientId, String[] request){
+		
+		if (needsRestart){
+			restartGame();
+		}
 		
 		//TODO was ==..but we may have more then min number of players. 
 	    if ((getPlayerCount() >= minPlayers) && (timerOn == false)){
@@ -195,21 +200,24 @@ public class Game {
 	//Summarizes end of game - last player with >= 1 dice remaining
 	private void endGame(int winner){
 		messageFromGameLogic = new String();
-		messageFromGameLogic =  "[game_end," + winner + "]";
+		messageFromGameLogic =  "[game_end, " + winner + "]";
 		setHasMessageToAllFromGameLogic(true);
-		
-		//reset game to original status.  
-		//reset players to original status when the game begins, not here.  
+		needsRestart = true;
+	}
+	
+	private void restartGame(){
+		//This was in end game. FRIDAY NIGHT 3:8:13 8:30 pm.  
+		//Reset game to original status.  
+		//Reset players to original status when the game begins, not here.  
 		this.state = stateLobby;
 		isWinner = -1;
 		firstPlayer = -2; //TODO make this private and put in a getter. 
 		playersInRound = -2;
 		lastBidVal = 0; 
 		lastBidFace = 0;
-		//TODO need to reset all values so game can restart here. 
 		timerOn = false; //reset timer so the lobbyTimer can be entered for the next game
+		needsRestart = false;
 		//TODO can I remove from the the player map here? 
-		
 	}
 
    // returns true if all players have gone.  Else, returns false. 
@@ -237,30 +245,13 @@ public class Game {
 		//CAMILLE ADDED Friday night.  I may have introduced a bug.  Check it. 
 		//only one player remains so they should win by default. 
 		//Add a unit test? 
-		if (playersInRound-1 == playersGone){
-		end = true;	
-		}
+	//	if (playersInRound-1 == playersGone){
+	//	end = true;	
+	//	}
  
 		return end;
 	}
-	
-	
-/*	   // returns true if all players have gone.  Else, returns false. 
-    private boolean roundEnd() {
-            System.err.print("IN ROUND END? " + "\n");
-            boolean end = false;
-            int playersLeft = 0;
-            for (Integer key : playerMap.keySet()){
-                    if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == true )){
-        playersLeft++;
-        System.err.print("IN ROUND END, player has not gone " + key + "\n");
-                    }
-            }
-            if (playersLeft == 1){end = true;}
-            return end;
-    }
-	*/
-	
+
 	
 	
 	//Resets "hasGone" to false so that players can start a new round. 
@@ -325,25 +316,16 @@ public class Game {
 		return elapsed;
 	}
 	
-	/*
-	 * TODO: Test this with differnet dice values. 
-      [round_start,player_count,player1#, p1_diceno,..., playern#, pn_diceno]
-      Informs everyone of all the players’ dice counts
-      Sample (4 players. p1 has 5 dice, p3 has 5, etc): [round_start, 4,1,5,3,4,4,5,5,4] 
-	 * */
-	
 	
 	public void roundStartMsg(){
 		System.err.print("  IN ROUND START MESSSAGE" +  messageFromGameLogic +  " \n");
-		messageFromGameLogic = new String(); //reset to avoid g
+		messageFromGameLogic = new String(); 
 		String tempString = new String();
 		StringBuilder sb = new StringBuilder();
 		sb.append("[round_start, ").append(getPlayerCount());
 		
-        for (int i = 0; i < getPlayerCount(); i++){
+        for (int i = 0; i < maxPlayers; i++){
         	if(isPlayerValid(i)){
-        	//TODO: move this.  rollDice shouldn't be here. at start of each round player rolls the dice	
-           // playerMap.get(i).rollDice();
 			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getDiceCount()); 
         	}
 		}
@@ -365,21 +347,20 @@ public class Game {
 		return;		
 	}
 
-	//////working on round end message
+	//working on round end message
 	private String roundEndMessage(){
 		   System.err.print("  IN ROUND END MESSAGE  "+  " \n");
 		String message = new String();
 		StringBuilder sb = new StringBuilder();
 		message = "[round_end, " + isLooser + ", " + getPlayerCount();
 		
-        for (int i = 0; i < getPlayerCount(); i++){
+        for (int i = 0; i < maxPlayers; i++){
         	if(isPlayerValid(i)){
-        	//TODO: move this.  rollDice shouldn't be here. at start of each round player rolls the dice	
             playerMap.get(i).rollDice();
 			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getPlayersDiceMessage()); 
         	}
 		}
-        sb.append("]  ");  ///this was a plus..now it is apppend.  Will this work? 
+        sb.append("]  ");  
         message = message + sb.toString();
 		return message;
 	}
@@ -574,9 +555,9 @@ public class Game {
 	//==============================================================
 	
 
-	//Messages from a sate
+	//Messages from a state
 	public boolean getHasMessageToAll (){return hasAllMessage;} 
-	public String  getAllPlayerMessageFromState(){return state.sendToAll();}
+	public String  getAllPlayerMessageFromState(){return state.sendToAll();} //this one giving us client join
 	public void    setHasMessageToAll(boolean reset){hasAllMessage = reset;}
 
 	// Method player message  
@@ -627,5 +608,6 @@ public class Game {
     public int getKicked() {return this.playerToKick;}
     public int getLastTurn(){return this.previousTurn;}
     public void reSetSendRoundMessage(){sendRoundMsg = false;}
+    public Integer[] getTurnArray(){return turnArray;}
 }
 
