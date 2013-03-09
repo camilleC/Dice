@@ -36,11 +36,11 @@ import java.util.Map;
 
 
 public class NonBlockingServer {
-
+    //private boolean startGame = true;
 	private int port;
-	private Game game; //
+	private Game game; 
 	private Map<Integer, SocketChannel> allClientChannels = new HashMap<Integer, SocketChannel>();
-
+    
 	public NonBlockingServer(int myPort, Game myGame) {
 		port = myPort; // instance variable automatically set to 0.
 		this.game = myGame;
@@ -64,23 +64,33 @@ public class NonBlockingServer {
 		server.socket().bind(new java.net.InetSocketAddress(port));
 		server.configureBlocking(false);
 		SelectionKey serverkey = server.register(selector,
-				SelectionKey.OP_ACCEPT, SelectionKey.OP_READ);
+				SelectionKey.OP_ACCEPT); //  SelectionKey.OP_READ this doesn't help
 
 		while (!exit) {
-			//selector.select();  //This will cause it to block
-			selector.select((long)game.timeToWait);  // This lets it timeout so that it isn't blocking on a connection
-			game.timeOutOver();
-			Set keys = selector.selectedKeys(); //****ANDY CHECK THIS IT BLOCKS****  It will wait for any connected client to send a message.  
-		    System.err.print("bar\n");          //  I can't send messages out arbitrarily b/c of this....as soon as a client sends me a   
-		                                        //  message then it gets past the selector and I can spam ALL my clients with messages but 
-		                                        //I need to figure out how to prevent this from blocking.    
-		                                        
-			for (Iterator i = keys.iterator(); i.hasNext();) {
+
+			//Game is in progress.  This will evaluate the lobby time out.
+			// If time up is over round start message will be sent. 
+			if (game.timeOutOver()){
+                game.roundStartMsg();
+					for (Integer j : allClientChannels.keySet()) { 
+						if (game.isPlayerValid(j)){
+							allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+						}
+					}
+					game.reSetSendRoundMessage(); //this will set round message to false so that I don't keep getting it. 
+					game.setHasMessageToAllFromGameLogic(false);
+			}
+			
+			 selector.select((long)game.timeToWait);
+			 Set keys = selector.selectedKeys();             
+	                                                         
+		       //Reactive code.  Is only triggered if a client sends a message (including trying to connect)
+		       for (Iterator i = keys.iterator(); i.hasNext();) {
 				SelectionKey key = (SelectionKey) i.next();
 				i.remove();
-                System.err.print("foo\n");
 				if (key == serverkey) {
 					if (key.isAcceptable()) {
+		              
 						SocketChannel client = server.accept();
 						allClientChannels.put(new Integer(counter), client);
 						client.configureBlocking(false);
@@ -115,7 +125,6 @@ public class NonBlockingServer {
 						client.write(encoder.encode(CharBuffer.wrap("Bye.")));
 						key.cancel();
 						client.close();
-						// didn't get a quit message.
 					} else {
 						//int num = ((Integer) key.attachment()).intValue();
 						String response = new String();
@@ -139,13 +148,24 @@ public class NonBlockingServer {
 							   
 								}
 							}
+							
+							//if a client is kicked they need the kicked message, they can't be closed till here.
+							//the for loop above provides the message. 
+							if (game.getReadyToKick()){
+								clientClose(game.getKicked());
+								key.cancel();
+								game.setPlayerStatus(game.getKicked(), Game.PlayerStatus.REMOVE);
+								game.setReadyToKick(false);
+							}
+							
 							// Reset for new message.
+
 							game.setHasMessageToAll(false);
 						}
 						
 						//Message created by the game logic needs to get sent to all
 						if (game.getHasMessageToAllFromGameLogic()) {
-
+                            System.err.print("Should I bee here? \n");
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
@@ -153,6 +173,8 @@ public class NonBlockingServer {
 									allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
 								}
 							}
+							
+			
 							// Reset for new message.
 							game.setHasMessageToAllFromGameLogic(false);
 						}
@@ -173,8 +195,12 @@ public class NonBlockingServer {
 					}
 				}
 			}
-		}
-	}
+
+				}
+			}
+
+		
+
 	
 	//-------------------------------------
 	//    Helper functions for Server
@@ -186,6 +212,8 @@ public class NonBlockingServer {
 	public void clientClose(int id) {
 		try {
 			allClientChannels.get(id).close();
+
+			System.out.print("in key cancle");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

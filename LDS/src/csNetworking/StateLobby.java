@@ -4,10 +4,6 @@ package csNetworking;
  * 
  * */
 
-import java.util.*;
-
-
-
 
 public class StateLobby implements State{
 	private Game myGame;
@@ -19,6 +15,13 @@ public class StateLobby implements State{
 	}
 	//TODO Send to many clients
 	public int join(int id, String[] request){
+		
+		//has the player already joined? If so Trying to join again is an invalid move.
+		//I don't think the messaging for this is set up...might not need it. 
+		if (myGame.getPlayerStatus(id) != Game.PlayerStatus.CONNECTED){
+			invalidMove(id);
+		}
+		
 			StringBuilder sb = new StringBuilder();
 			String messageToPlayer = new String();
 			myGame.setPlayerName(id, new String(request[2]));
@@ -46,43 +49,50 @@ public class StateLobby implements State{
 		myGame.setclientClose(id);
 		messageToAll = ("[client_quit, " + id + "]");
 		myGame.setHasMessageToAll(true);
-	};
+	}
 	
-	public void invalidMove(int id){
-		int attempts;
-		attempts = myGame.getPlayerAttemptCount(id);
+	private void kicked(int id){
+		myGame.setKicked(id);
+		myGame.setReadyToKick(true);
+		messageToAll = ("[client_kicked, " + id + "]");
+		//if the current player gets kicked signal the next player that it is thier turn.
+		if (id == myGame.getPlayerTurn()){  
+			 myGame.setNextPlayerTurn(); 
+			 messageToAll = "[client_kicked, " + id + "]" + "[player_turn, "+ myGame.getPlayerTurn() + "]";
+		}
+	     myGame.setHasMessageToAll(true);
+	}
+
+	//Decrements attempt count.  If to many invalid moves
+	//This function will the kicked method. 
+	private void invalidMove(int id){
+		int attempts = myGame.getPlayerAttemptCount(id);
+		System.out.print(attempts);
 		attempts = attempts -1;
-		
+		System.out.print(attempts);
 		if (attempts == 0){
 			kicked(id);
 		}
+		else{
+		myGame.setPlayerAttemptCount(id, attempts);
+		String messageToPlayer = new String();
+		messageToPlayer = ("[invalid_move," + attempts + "]");
+		myGame.setPlayerMessage(id, messageToPlayer);
+		myGame.clientHasMessage(id);
 		}
-	
-		
-		public void kicked(int id){
-			myGame.setclientClose(id);
-			messageToAll = ("[client_kicked, " + id + "]");
-			myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
-			if (id == myGame.getPlayerTurn()){ //if the current player gets kicked signal the next player that it is thier turn. 
-				 myGame.setNextPlayerTurn(); 
-			     myGame.setHasMessageToAll(true);
-			}
 		}
 		
 	//players will recieve invalid move message if they bid or challenge while in the lobby	
 	public int bid(int id, String[] request){invalidMove(id);return 0;}
-	public int challenge(Map<Integer, Player> players, int id, String[] request){invalidMove(id);return 0;}
+	public void challenge(int id){invalidMove(id);}
 
-	public String sendToClient(Map<Integer, Player> players, int id){return "not implimented";}
+
 	//public String sendToAll(){return messageToAll;}
 	//Need to reset original message
 	public String sendToAll(){
 			return messageToAll;
 	}
-	
-	public void changeState(Game.GameState newState){
-		myGame.setState(newState);
-	}
+
 }
 	
 	

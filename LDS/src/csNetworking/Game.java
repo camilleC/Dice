@@ -29,10 +29,11 @@ public class Game {
 	private int portNum;
 	private int minPlayers = 2; 
 	int maxPlayers = 30;
-	public int timeToWait = 2; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds //TODO change to private
+	public int timeToWait = 1; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds //TODO change to private
+	public boolean unblock = false;
 	private long startLobbyTime;  
 	//private long endLobbyTime;  
-	private int atcnt;
+	private int atcnt = 3;
 	private boolean timerOn = false;
 	private boolean sendRoundMsg = false;
 	private int isWinner = -1;
@@ -45,7 +46,6 @@ public class Game {
 	private String messageFromGameLogic;
 	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
 	private Integer[]turnArray;
-	//private List<Integer> turnArray = new List<Integer>(); //TODO: Determine time space complexity
 	private State stateLobby;	
 	private State stateInGame;
 	private State stateTimerLobby;
@@ -54,11 +54,13 @@ public class Game {
 	private State state; 
 	private int whoseTurn = -1;
 	private int lastTurn = 0;
+	private int previousTurn = 0; //TODO make this a private and add a getter
 	public int firstPlayer = -2; //TODO make this private and put in a getter. 
 	public int playersInRound = -2;
 	private int lastBidVal;  //should these be static?  
 	private int lastBidFace;
-
+    private int playerToKick;
+    private boolean kickMe = false;
 	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
 	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
 	public enum PlayerStatus{CONNECTED, PLAYING, WATCHING, REMOVE};
@@ -96,12 +98,10 @@ public class Game {
            timerOn = true;
            System.err.print("turning timer on \n");
            sendTimerMessage();
-           //System.err.print("min players reached");
            startTime();
 		}
 	    
-        //Function call from server will flip state to inGame when timeOut is reached. 
-
+	    //timeOutOver(); //check if the timeout is over. Doing this in server now 
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
@@ -122,7 +122,7 @@ public class Game {
 			state.bid(clientId, request);
 			break;
 		case CHALLENGE:
-			state.challenge(playerMap, clientId, request);
+			state.challenge(clientId);
 			break;
 		} 
 	
@@ -130,8 +130,7 @@ public class Game {
     // EVALUATE Round end.  Look for a winner
 	//////////////////////////////////////////////////////////
 		if (roundEnd()) {
-			System.err.print("send round end message \n");
-
+			System.err.print(" AAAAAAAAAAa  \n");
 			// If no winner reset for next round
 			if (-1 == isWinner()) {
 				setHasGone();
@@ -176,7 +175,8 @@ public class Game {
 		return isWinner;
 	}
 	
-	public void timeOutOver(){
+	public boolean timeOutOver(){
+		boolean unblock = false;
 	    if (state != stateInGame) {
 			if (timerOn & elapsedTime(startLobbyTime) >= timeToWait) {
 				System.err.print("THIS SHOULD ONLY BE SEEN ONCE IN A GAME \n");
@@ -185,8 +185,10 @@ public class Game {
 				setTurnOrder(); //set order of turns for players. 
 				playersInRound = getCountPlayersMakingMoves(); // count of players making moves at the start of game. 
 				sendRoundMsg = true;
+				unblock = true;
 			}
 		}
+	    return unblock;
 		}
 
 
@@ -211,19 +213,56 @@ public class Game {
 	}
 
    // returns true if all players have gone.  Else, returns false. 
+	//TODO Fix this, I am not sure if it is working correctly. 
 	private boolean roundEnd() {
 		System.err.print("IN ROUND END? " + "\n");
 		boolean end = false;
-		int playersLeft = 0;
+		int playersGone = 0;
+		int id = 0;
+		int playersInRound = 0;
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == true )){
-            playersLeft++;
-            System.err.print("IN ROUND END, player has not gone " + key + "\n");
+               playersGone++;
+               id = key;
 			}
 		}
-		if (playersLeft == 1){end = true;}
+		
+		playersInRound = getCountPlayersMakingMoves();
+        
+		//everyone has gone.
+		if (playersInRound == playersGone){
+			end = true;
+		} 
+		
+		//CAMILLE ADDED Friday night.  I may have introduced a bug.  Check it. 
+		//only one player remains so they should win by default. 
+		//Add a unit test? 
+		if (playersInRound-1 == playersGone){
+		end = true;	
+		}
+ 
 		return end;
 	}
+	
+	
+/*	   // returns true if all players have gone.  Else, returns false. 
+    private boolean roundEnd() {
+            System.err.print("IN ROUND END? " + "\n");
+            boolean end = false;
+            int playersLeft = 0;
+            for (Integer key : playerMap.keySet()){
+                    if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == true )){
+        playersLeft++;
+        System.err.print("IN ROUND END, player has not gone " + key + "\n");
+                    }
+            }
+            if (playersLeft == 1){end = true;}
+            return end;
+    }
+	*/
+	
+	
+	
 	//Resets "hasGone" to false so that players can start a new round. 
 	private void setHasGone() {
 		System.err.print("IN RESET TURNS? " + "\n");
@@ -275,6 +314,7 @@ public class Game {
 		messageFromGameLogic = "[timer_start, " + timeToWait + "]";
 	    setHasMessageToAllFromGameLogic(true);
 	}
+	
 	private void startTime(){
 		startLobbyTime =  System.currentTimeMillis( );
 	}
@@ -292,7 +332,8 @@ public class Game {
       Sample (4 players. p1 has 5 dice, p3 has 5, etc): [round_start, 4,1,5,3,4,4,5,5,4] 
 	 * */
 	
-	private void roundStartMsg(){
+	
+	public void roundStartMsg(){
 		System.err.print("  IN ROUND START MESSSAGE" +  messageFromGameLogic +  " \n");
 		messageFromGameLogic = new String(); //reset to avoid g
 		String tempString = new String();
@@ -357,42 +398,45 @@ public class Game {
 
 	//
 	public int getPlayerTurn(){
-		//no one has gone yet..this is the default value.
+		//no one has gone yet, must set here
+		//due to loop logic in setNextPlayerTurn
 		if (whoseTurn == -1){
 			whoseTurn = 0;
-			//setNextPlayerTurn();
+
 		}
 		System.err.print(" +++++++++++++++ WHOES TURN " + whoseTurn + " \n");
 		return whoseTurn;
 	}
 	
 	
-	//***********************************************************************************
-	//***********************************************************************************
 	/**Determines next palyer's turn.  If the end of list is reached
 	* Turn is equal to the first entry of the list.  
 	*/
-	//this was based on an itterator object over the player map..but this caused palyer map to do "double duty" 
-	//I think this is cleaner. 
-	public void setNextPlayerTurn() {
+	public int setNextPlayerTurn() {
 		int i;
-		//System.err.print("last Turn" + lastTurn + "\n");
+		// previous turn is the person before turn is updated.
+		// after the update lastTurn = whose turn so must keep
+		// track of predecessor.
+		previousTurn = whoseTurn;
+
+		System.err.print("  +++++++++++++  previous Turn" + previousTurn + "\n");
 		for (i = lastTurn; i < maxPlayers; i++) {
 			if (isPlayerInRound(turnArray[i])) {
-				//System.err.print("*********** IN SET PLAYERTURN :" + i + "\n");
-				if (playerMap.get(i).getHasGone() == false){
-			//	    System.err.print("*********** AND I is FALSE\n");
-				    whoseTurn = turnArray[i];
-				    lastTurn = whoseTurn;
-				break;
+				if (playerMap.get(i).getHasGone() == false) {
+					whoseTurn = turnArray[i];
+					lastTurn = whoseTurn;
+					break;
 				}
 			}
-		if (i == 29){
-			//end of playerlist has been reached, reset turn to player 0
-			whoseTurn=0;
-		}	
-			
+			// end of list, reset to start.
+
+			if (i == 29) {
+				whoseTurn = 0;
+				lastTurn = 0;
+			}
 		}
+		System.err.print("   +++++++++  next turn has been set  to " + whoseTurn + "\n");
+		return whoseTurn;
 	}
 
 	//===============================================================
@@ -498,6 +542,7 @@ public class Game {
 		for (Integer key : playerMap.keySet()){
 		   turnArray[(int)key] = (int)key;
 		}
+		firstPlayer = turnArray[0];
 	}
 
 	//returns number of players who are allowed to bid, challenge, or watch. 
@@ -533,19 +578,29 @@ public class Game {
 	public boolean getHasMessageToAll (){return hasAllMessage;} 
 	public String  getAllPlayerMessageFromState(){return state.sendToAll();}
 	public void    setHasMessageToAll(boolean reset){hasAllMessage = reset;}
+
+	// Method player message  
+	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
 	public void    setPlayerMessage(int Id, String sendMessage){playerMap.get(Id).setPlayerMessage(sendMessage);}
+
 	
 	//Messages from the game to all clients
 	public boolean getHasMessageToAllFromGameLogic() {return hasAllMessageGameLogic;}
 	public String  getAllPlayerMessageFromGameLogic(){return messageFromGameLogic;} 
+	public void    resetMessageFromGameLogicString() {messageFromGameLogic = new String();}  //CAMILLE ADDED WILL THIS FIX REAPEATING MESSAGE?
 	public void    setHasMessageToAllFromGameLogic(boolean reset){hasAllMessageGameLogic = reset;}
 	
-	//Messages from the game to each client
+	// Methods for dice 
 	public void  setDiceMsg(){sendDiceMsg = false;}
 	public boolean  getDiceMsg(){return sendDiceMsg;}
 	public String getPlayerDiceMessageFromState(int id){return playerMap.get(id).diceMessage();}
-	public String  getPlayerMessage(int id){return playerMap.get(id).getPlayerMessage();}
+	public List<Integer> getDice(int id){return playerMap.get(id).getDice();}
+	public int getDiceCount(int id){return  playerMap.get(id).getDiceCount();}
+	public int decrementDice(int id){return playerMap.get(id).decrementDice();}
+	
 
+	
+	
 	//Returns true if client is a player and false if client is observing
 	public PlayerStatus getPlayerStatus(int id){return playerMap.get(id).getPlayerStatus();} 
 	public void    setPlayerStatus(int id, PlayerStatus newStatus){playerMap.get(id).setPlayerStatus(newStatus);}	
@@ -558,7 +613,7 @@ public class Game {
 	public int     getTimeToWait(){return timeToWait;}
 	public int     getAtcnt(){return atcnt;}
 	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;}
-	public void setBid(String[] bids, int id){playerMap.get(id).setBid(bids);}
+	public void setBid(int id, String[] bids){playerMap.get(id).setBid(bids);}
 	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
 	public int getLastBidVal() {return lastBidVal;}
 	public int getLastBidFace() {return lastBidFace;}
@@ -566,6 +621,11 @@ public class Game {
 	public void setLastBidFace(int currentBidFace) {lastBidFace = currentBidFace;}
 	public boolean getHasGone(int id){return playerMap.get(id).getHasGone();}
 	public void setHasGone(int id, boolean newVal){playerMap.get(id).setHasGone(newVal);}
-
+	public void setKicked(int id){this.playerToKick = id;}
+	public void setReadyToKick(boolean kickme){this.kickMe = kickme;}
+	public boolean getReadyToKick(){return kickMe;}
+    public int getKicked() {return this.playerToKick;}
+    public int getLastTurn(){return this.previousTurn;}
+    public void reSetSendRoundMessage(){sendRoundMsg = false;}
 }
 

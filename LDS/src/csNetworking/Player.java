@@ -16,7 +16,7 @@ public class Player {
 	private String name;
 	
 	private Game.PlayerStatus playerStatus = Game.PlayerStatus.CONNECTED; 
-	private String outMessage = new String();
+    private String outMessage = new String();
 	private String collectMessage;
 	private String[] finalMessage;
 	private int playerId;
@@ -36,35 +36,29 @@ public class Player {
 		this.attemptCount = atcnt;
 	}
 	
+	public void setPlayerMessage(String sendMessage){
+        outMessage = sendMessage;
+     }
+    public String getPlayerMessage(){
+        return outMessage;              
+        }
+    
 	public String getName() {
 		return name;
 	}
  //TODO i < bids.length-1 b/c i = 0 is null, why??? and i = 1 is "bid".  
 	//change this, a bid is only two numbers.  Opps!
 	public void setBid(String[] bids){
-		for (int i = 2; i < bids.length-1; i++) {
-			//System.err.print(i + " " + bids[i] + "\n");
+		for (int i = 2; i < bids.length; i++) {
 			myBids.add(Integer.parseInt(bids[i]));
-		   }
 		}
-	
-	public List<Integer> getBid(){return myBids;}
-	
-	//public void setMyTurn(boolean turn){
-	//	myTurn = turn;
-	//}
-	
-	///public boolean getMyTurn(){return myTurn;}
-	//sets messages to go between the servers.  Not to 
-	//be used for setting commands. 
-	public void setPlayerMessage(String sendMessage){
-	   outMessage = sendMessage;
+		System.out.print(myBids.get(0) + " " + myBids.get(1));
+		
 	}
 	
-	public String getPlayerMessage(){
-		return outMessage;		
-		}
-
+	public List<Integer> getBid(){return myBids;}
+	public List<Integer> getDice(){return myDice;}
+	
 	public Game.PlayerStatus getPlayerStatus(){
 		return playerStatus;
 	}
@@ -91,6 +85,7 @@ public class Player {
 	}
 
 	public int getAttemptCount() {
+		System.out.print("in palyer " + attemptCount + "\n");
 		return attemptCount;
 	}
 
@@ -153,7 +148,7 @@ public class Player {
 		String myMessage;
 		StringBuilder sb = new StringBuilder();
 		sb.append("[your_dice, ").append(getDiceCount());
-        for (int i = 1; i < getDiceCount()-1; i++){
+        for (int i = 0; i < getDiceCount(); i++){
 			//System.err.print("dice num" + i+ " value " + myDice.get(i) + "\n");
         	sb.append(", ").append(myDice.get(i));
         	}
@@ -164,19 +159,15 @@ public class Player {
 	
 	//can use this for end of round dice counts
 	public String getPlayersDiceMessage(){
-		//System.err.print("myPlayernum: " + playerId + " myDiceCount " + getDiceCount());
 		String myMessage;
 		StringBuilder sb = new StringBuilder();
 		sb.append(getDiceCount());
         for (int i = 1; i < getDiceCount()-1; i++){
-			//System.err.print("dice num" + i+ " value " + myDice.get(i) + "\n");
         	sb.append(", ").append(myDice.get(i));
         	}
         myMessage = sb.toString();	 
 		return myMessage;
 	}
-	
-	
 	
 	
 	//Pre:  Takes the number of dice the player has
@@ -194,20 +185,14 @@ public class Player {
 		}
 	}
 	
-	// TODO: insetead of decrementing count try uinsg myDice.size() after the removal
-	// Returns the diceCount after decrementation
+   /**
+    * Decrements dice count till player has no dice.
+    * Returns the count of remaining dice. 
+    * */
 	public int decrementDice(){		
 		if (diceCount >= 1){
 		diceCount = diceCount -1;
-		myDice.remove(0); // remove the first dice, shifts all otherds to the left.
-		}
-		else{
-			System.err.print("Error: no dice left to decrement."); //TODO prevent this situation from occuring and then delete his message. 
-		}
-		
-		//They have no more dice left.  Change status to "watching".
-		if (diceCount == 0){
-			setPlayerStatus(Game.PlayerStatus.WATCHING);
+		myDice.remove(0); 
 		}
         return diceCount;
 	}
