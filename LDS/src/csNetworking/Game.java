@@ -25,45 +25,55 @@ import java.io.*;
 import java.util.*;
 
 public class Game {
+	
+	/////////  Command Line Arguments //////////////
 	private String[] argsIn = null;
 	private int portNum;
 	private int minPlayers = 2; 
 	int maxPlayers = 30;
-	public int timeToWait = 1; //set this back to 60 as a default. 10 is here for testing..I don't want to wait 60 seconds //TODO change to private
-	public boolean unblock = false;
-	private long startLobbyTime;  
-	//private long endLobbyTime;  
+	private int timeToWait = 1; //set this back to 60000 (60 seconds)
 	private int atcnt = 3;
+	///////////////////////////////////////////////////
+	
+	private long startLobbyTime;  
+
 	private boolean timerOn = false;
 	private boolean sendRoundMsg = false;
-	private int isWinner = -1;
-	private int isLooser = -1;
-	private boolean sendDiceMsg = false;
-	private int playerWithMessage = -1;
+    private boolean kickMe = false;
+    private boolean needsRestart = false;
 	private boolean hasAllMessage = false;
 	private boolean roundEndMessage = false; 
 	private boolean hasAllMessageGameLogic = false;
-	private String messageFromGameLogic;
-	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
-	private Integer[]turnArray;
+	private boolean sendDiceMsg = false;
+	public boolean unblock = false; //what is this one for???
+	public long maxTimeRecieveMessage = 3; //TODO what should this number be? Specs don't tell me. 
+	
+    private int isWinner = -1;
+	private int isLooser = -1;
+	private int playerWithMessage = -1;
+	private int whoseTurn = -1;
+	private int lastTurn = 0;
+	private int previousTurn = 0; //TODO make this a private and add a getter
+	private int lastBidVal;  //should these be static?  
+	private int lastBidFace;
+    private int playerToKick;
+   
+    public int firstPlayer = -2; //TODO make this private and put in a getter. 
+	public int playersInRound = -2;
+	
+	private State state; 
 	private State stateLobby;	
 	private State stateInGame;
 	private State stateTimerLobby;
 	private GameState nextState;
+	
+	private Integer[]turnArray;
 	private NonBlockingServer server;
-	private State state; 
-	private int whoseTurn = -1;
-	private int lastTurn = 0;
-	private int previousTurn = 0; //TODO make this a private and add a getter
-	public int firstPlayer = -2; //TODO make this private and put in a getter. 
-	public int playersInRound = -2;
-	private int lastBidVal;  //should these be static?  
-	private int lastBidFace;
-    private int playerToKick;
-    private boolean kickMe = false;
-    private boolean needsRestart = false;
-	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};
-	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE};
+	private String messageFromGameLogic;
+	private Map<Integer, Player> playerMap= new LinkedHashMap<Integer, Player>(); //TODO: Determine time space complexity
+	
+	public enum GameState{DEFAULT, INGAME, LOBBY, TIMERLOBBY};    
+	public enum PlayerAct{DEFAULT, JOIN,QUIT,BID,CHALLENGE}; 
 	public enum PlayerStatus{CONNECTED, PLAYING, WATCHING, REMOVE};
 
 	//===============================================================
@@ -88,8 +98,6 @@ public class Game {
 	*  Initial state is "LOBBY".  When min number of players is reached
 	*  state changes to "TIMERLOBBY".  When max wait time is over
 	*  state changes to "INGAME" where the betting rounds will be held.
-	*  When game is over TODO a winning message will be sent and state will
-	*  be reset to "LOBBY"
 	*/
 	private void gameLogic(int clientId, String[] request){
 		
@@ -97,7 +105,6 @@ public class Game {
 			restartGame();
 		}
 		
-		//TODO was ==..but we may have more then min number of players. 
 	    if ((getPlayerCount() >= minPlayers) && (timerOn == false)){
            state = stateTimerLobby;
            timerOn = true;
@@ -106,7 +113,6 @@ public class Game {
            startTime();
 		}
 	    
-	    //timeOutOver(); //check if the timeout is over. Doing this in server now 
 		
 		if (nextState == GameState.LOBBY){this.state = stateLobby;}
 		else if (nextState == GameState.TIMERLOBBY){this.state = stateTimerLobby;}
@@ -135,7 +141,6 @@ public class Game {
     // EVALUATE Round end.  Look for a winner
 	//////////////////////////////////////////////////////////
 		if (roundEnd()) {
-			System.err.print(" AAAAAAAAAAa  \n");
 			// If no winner reset for next round
 			if (-1 == isWinner()) {
 				setHasGone();
@@ -156,7 +161,6 @@ public class Game {
 	        	}
 			}
 	
-			System.err.print("calling round start mesage\n");
 	    	roundStartMsg();
 	    	sendRoundMsg = false;
 	    	sendDiceMsg= true;
@@ -167,7 +171,6 @@ public class Game {
 	//returns -1 if no winner yet (game still on)
 	//or player number if there is a winner. 
 	public int isWinner() {
-		System.err.print("IN IS WINNER" + "\n");
 		if (getCountPlayersMakingMoves() == 1) {
 			for (Integer key : playerMap.keySet()) {
 				if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)) {
@@ -194,7 +197,7 @@ public class Game {
 			}
 		}
 	    return unblock;
-		}
+	}
 
 
 	//Summarizes end of game - last player with >= 1 dice remaining
@@ -205,6 +208,7 @@ public class Game {
 		needsRestart = true;
 	}
 	
+	//A winner has been found.  Start game over. 
 	private void restartGame(){
 		//This was in end game. FRIDAY NIGHT 3:8:13 8:30 pm.  
 		//Reset game to original status.  
@@ -221,17 +225,14 @@ public class Game {
 	}
 
    // returns true if all players have gone.  Else, returns false. 
-	//TODO Fix this, I am not sure if it is working correctly. 
+	//TODO Fix this, I am not sure if it is working correctly.  What if there is only one player at the start?  Will it get trigered? 
 	private boolean roundEnd() {
-		System.err.print("IN ROUND END? " + "\n");
 		boolean end = false;
 		int playersGone = 0;
-		int id = 0;
 		int playersInRound = 0;
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == true )){
                playersGone++;
-               id = key;
 			}
 		}
 		
@@ -256,7 +257,6 @@ public class Game {
 	
 	//Resets "hasGone" to false so that players can start a new round. 
 	private void setHasGone() {
-		System.err.print("IN RESET TURNS? " + "\n");
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING)){
 				playerMap.get(key).setHasGone(false);
@@ -267,7 +267,6 @@ public class Game {
 	
 	//players who joined while the game was in round need to be switched to playing. 
 	private void reSetStatus() {
-		System.err.print("IN RESET STATUS? " + "\n");
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.WATCHING)){
 				playerMap.get(key).setPlayerStatus(PlayerStatus.PLAYING);
@@ -301,7 +300,6 @@ public class Game {
 	
 	private void sendTimerMessage(){
 		messageFromGameLogic = new String(); 
-        System.err.print("In send timer message \n");
 		messageFromGameLogic = "[timer_start, " + timeToWait + "]";
 	    setHasMessageToAllFromGameLogic(true);
 	}
@@ -318,7 +316,6 @@ public class Game {
 	
 	
 	public void roundStartMsg(){
-		System.err.print("  IN ROUND START MESSSAGE" +  messageFromGameLogic +  " \n");
 		messageFromGameLogic = new String(); 
 		String tempString = new String();
 		StringBuilder sb = new StringBuilder();
@@ -349,7 +346,6 @@ public class Game {
 
 	//working on round end message
 	private String roundEndMessage(){
-		   System.err.print("  IN ROUND END MESSAGE  "+  " \n");
 		String message = new String();
 		StringBuilder sb = new StringBuilder();
 		message = "[round_end, " + isLooser + ", " + getPlayerCount();
@@ -468,7 +464,9 @@ public class Game {
 
 	}
 
-
+ 
+	//call this to kick a client out of the game.  
+	public void kickClinetTimedOut(int id){state.kicked(id);}
 	//---------------------------------------------------------------------------
 	/* Collect data from client to form a complete message
 		 When entire message is collect recieveAction will be called.*/ 
@@ -497,7 +495,7 @@ public class Game {
 
 	//Adds player to the PlayerQ but does not "join" them to the game 
 	public void addPlayer(int playerID){
-		Player newPlayer = new Player(playerID, atcnt);
+		Player newPlayer = new Player(playerID, atcnt, maxTimeRecieveMessage);
 		playerMap.put(playerID, newPlayer);
 	}
 
@@ -585,22 +583,26 @@ public class Game {
 	//Returns true if client is a player and false if client is observing
 	public PlayerStatus getPlayerStatus(int id){return playerMap.get(id).getPlayerStatus();} 
 	public void    setPlayerStatus(int id, PlayerStatus newStatus){playerMap.get(id).setPlayerStatus(newStatus);}	
-	public String  getPlayerName(int Id){ return playerMap.get(Id).getName();}
-	public void    setPlayerName(int Id, String name){playerMap.get(Id).setName(name);}
+	public String  getPlayerName(int id){ return playerMap.get(id).getName();}
+	public void    setPlayerName(int id, String name){playerMap.get(id).setName(name);}
 	public int     getPlayerAttemptCount(int id){return playerMap.get(id).getAttemptCount();}
 	public void    setPlayerAttemptCount(int id, int newValue){ playerMap.get(id).setAttemptCount(newValue);}
+	public boolean playerMessagCollectionTimedOut(int id){return playerMap.get(id).timedOut();}
+	public void setBid(int id, String[] bids){playerMap.get(id).setBid(bids);}
+	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
+	public boolean getHasGone(int id){return playerMap.get(id).getHasGone();}	
+	
 	public int     getMinPlayerCnt(){return minPlayers;}
 	public int     getMaxPlayerCnt(){return maxPlayers;}
 	public int     getTimeToWait(){return timeToWait;}
 	public int     getAtcnt(){return atcnt;}
 	public void    setState(GameState nextState){System.err.print("in changing state");this.nextState = nextState;}
-	public void setBid(int id, String[] bids){playerMap.get(id).setBid(bids);}
-	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
+
 	public int getLastBidVal() {return lastBidVal;}
 	public int getLastBidFace() {return lastBidFace;}
 	public void setLastBidVal(int currentBidVal) {lastBidVal = currentBidVal;}
 	public void setLastBidFace(int currentBidFace) {lastBidFace = currentBidFace;}
-	public boolean getHasGone(int id){return playerMap.get(id).getHasGone();}
+
 	public void setHasGone(int id, boolean newVal){playerMap.get(id).setHasGone(newVal);}
 	public void setKicked(int id){this.playerToKick = id;}
 	public void setReadyToKick(boolean kickme){this.kickMe = kickme;}
@@ -609,5 +611,6 @@ public class Game {
     public int getLastTurn(){return this.previousTurn;}
     public void reSetSendRoundMessage(){sendRoundMsg = false;}
     public Integer[] getTurnArray(){return turnArray;}
+   
 }
 

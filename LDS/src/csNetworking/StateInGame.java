@@ -105,8 +105,9 @@ public class StateInGame implements State {
         }
         return 0;
 }
-
-
+    // Client challenges the bid of the last player.  If the last players bid was correct the challenger looses a dice.  Otherwise, 
+    //the last player looses a dice b/c they lied about their bid. 
+    //If the client looses all of their dice they are removed from the list of "players" and added to the list of "watchers". 
 	public void challenge(int id) {
 	if (id != myGame.getPlayerTurn()){
 		invalidMove(id);
@@ -167,7 +168,7 @@ public class StateInGame implements State {
 		//System.out.print("Bidding active, in game_bid \n");
 	}
 	
-
+    
 	private void msgChallengeReport(int id, int looser){
 		StringBuilder sb = new StringBuilder();
 		sb.append("[challenge_report, ").append(looser);
@@ -218,17 +219,34 @@ public class StateInGame implements State {
 		}
 		
 		//sends kicked message, sets flags so that after message is sent client connection will be closed. 
-		private void kicked(int id){
+		public void kicked(int id){
 			myGame.setKicked(id);
 			myGame.setReadyToKick(true);
-			 myGame.setHasGone(id, true); //This counts as thier turn. 
-			messageToAll = ("[client_kicked, " + id + "]");
-			//if the current player gets kicked signal the next player that it is thier turn.
-			if (id == myGame.getPlayerTurn()){  
-				 myGame.setNextPlayerTurn(); 
-				 messageToAll = "[client_kicked, " + id + "]" + "[player_turn, "+ myGame.getPlayerTurn() + "]";
+			myGame.setHasGone(id, true); //This counts as thier turn. 
+			myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
+			messageToAll = new String();
+			
+			
+			
+			//if the current player gets kicked need to signal next player
+			//that it is their turn.  However, must check for a winner first. 
+			if (id == myGame.getPlayerTurn()) {
+				if (myGame.isWinner() == -1) {
+			    	myGame.setNextPlayerTurn();
+				    messageToAll = ("[client_kicked, " + id + "]"); 
+				    myGame.setHasMessageToAll(true);
+				}
+				//someone kicked and now there is a winner.
+			    //the call to isWinner above will build a message. 
+				//DO NOT set a MessageToAll here. 
 			}
-		     myGame.setHasMessageToAll(true);
+			else { //if not players turn check if there is a winner. 
+				myGame.isWinner();	
+			    messageToAll = ("[client_kicked, " + id + "]"); 
+			    myGame.setHasMessageToAll(true);
+				}
+			
+	
 		}
  
 		//Decrements attempt count.  If to many invalid moves

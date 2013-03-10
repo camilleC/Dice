@@ -17,5 +17,6 @@ public interface State {
 	public int bid(int id, String[] request);
 	public void challenge(int id);
 	public String sendToAll();
+	public void kicked(int id);
 
 }

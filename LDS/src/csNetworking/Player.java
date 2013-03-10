@@ -13,28 +13,115 @@ import java.util.*;
 
 
 public class Player {
-	private String name;
 	
-	private Game.PlayerStatus playerStatus = Game.PlayerStatus.CONNECTED; 
+	private int playerId;
+	private int MAX_DICE = 5;
+	private int diceCount = MAX_DICE;
+	private int attemptCount = 3; 
+	boolean timeOut = false;
+	private boolean hasGone = false;
+	private boolean startTimer = true;
+	private long collectMessageStartTime = 0;
+	private long collectMessageEndTime = 0;
+	private long maxCollectionTime = 0;
+	private String name;
     private String outMessage = new String();
 	private String collectMessage;
 	private String[] finalMessage;
-	private int playerId;
-	private int MAX_DICE = 5;//TODO remove hard code
-	private int diceCount = MAX_DICE;
+	static Random generator = new Random();
 	private List<Integer> myDice = new ArrayList<Integer>();
 	private List<Integer> myBids = new ArrayList<Integer>();
-	private int attemptCount = 3; //TODO remove hard code
-	private boolean hasGone = false;
-	//private boolean myTurn = false;
-
-	static Random generator = new Random();
-	// Getters and setters
+	private Game.PlayerStatus playerStatus = Game.PlayerStatus.CONNECTED; 
 	
-	public Player(int playerId, int atcnt){
+	//Constructor
+	public Player(int playerId, int atcnt, long maxCollectionTime){
 		this.playerId = playerId;
 		this.attemptCount = atcnt;
+		this.maxCollectionTime = maxCollectionTime;
 	}
+	
+	
+	/////////  TIMING NOT TESTED YET CHECK CONVERSIONS //////////////////
+	private void startTime(){
+		collectMessageStartTime =  System.currentTimeMillis( );
+	}
+	
+	private void endTime(){
+		collectMessageEndTime =  System.currentTimeMillis( );
+	}
+	
+    public boolean timedOut(){return timeOut;}
+	
+    private boolean timeIt(){
+		//of they are both zero collection process has not started yet. 
+		if ((collectMessageEndTime + collectMessageStartTime) > 0){
+			if (elapsedTime() >= maxCollectionTime){
+			timeOut = true;
+			}
+		}    	
+    	return timeOut;
+    	
+    }
+    
+    //TODO are these numbers correct?  Is there supposed to be a conversion? 
+	private long elapsedTime(){
+		long elapsed = collectMessageEndTime - collectMessageStartTime ;
+		return elapsed;
+	}
+	///////////////////////////////////////////////////////////////////////
+	
+	
+	// This just collects a message for a given time period. It does not
+	// validate data.
+	public int setMessage(String message) {
+		int errorValue = 0; // 0 = message ok, -1 means too long.
+		boolean bracket1 = false;
+		boolean bracket2 = false;
+
+		if (startTimer) {
+			startTime();
+			startTimer = false;
+		}
+
+		collectMessage = collectMessage + message;
+
+		char[] chars = collectMessage.toCharArray();
+		if (chars.length <= 600) { //message need to be less than 600 characters long
+			for (int i = 0, n = chars.length; i < n; i++) {
+				char c = chars[i];
+				if (c == '[')
+					bracket1 = true;
+				if (c == ']')
+					bracket2 = true;
+				
+				//timeUp could happen here...may wait forever for final bracket.....
+				timeIt();
+			}
+		} else {
+			errorValue = -1;
+		}
+
+		if (chars.length <= 600) {
+			if (bracket1 && bracket2) {
+				String delims = "[\\[, \\]]+"; // should I NOT have the plus????
+												// there should just be one set
+												// of brackets per message.
+				finalMessage = collectMessage.split(delims);
+				collectMessage = null;
+				// finalBracketFound. Stop collection timer
+				// reset to collection mode.
+	            timeIt(); // is it okay to have it in two places? 
+				startTimer = true;
+				collectMessageStartTime = 0;
+				collectMessageEndTime = 0;
+				return 1;
+			}
+		} else {
+			errorValue = -1;
+		}
+		return errorValue;
+	}
+	
 	
 	public void setPlayerMessage(String sendMessage){
         outMessage = sendMessage;
@@ -117,31 +204,7 @@ public class Player {
 	return finalMessage;
 	}
 	
-	//TODO will need to fix this for invalid messages like [.... or ....]
-	//also check to make sure it is not longer then 600
-	public int setMessage(String message){
-		
-	boolean bracket1 = false;
-	boolean bracket2 = false;
-	
-		collectMessage = collectMessage + message;
 
-		char[] chars = collectMessage.toCharArray();
-		for (int i = 0, n = chars.length; i < n; i++) {
-		    char c = chars[i];
-		    if (c == '[') bracket1 = true;
-		    if (c == ']') bracket2 = true;
-		}
-		 
-		if (bracket1 && bracket2){
-			String delims = "[\\[, \\]]+";
-			finalMessage = collectMessage.split(delims);
-			//System.err.print("testing in set message" + finalMessagint totalDicee[1]);;
-			collectMessage = null;
-			return 1;
-		}
-		return -1;
-	}
 	
 	public String diceMessage(){
 		//System.err.print("myPlayernum: " + playerId + " myDiceCount " + getDiceCount());

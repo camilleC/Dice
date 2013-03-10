@@ -68,7 +68,34 @@ public class NonBlockingServer {
 
 		while (!exit) {
 
-			//Game is in progress.  This will evaluate the lobby time out.
+           /**
+			 Code in this section will go to clients 
+			 even if they are not sending the server a message. 
+             */
+			
+			//Has any channel timed out on a message? 
+			for (Integer i : allClientChannels.keySet()) { 
+				if (game.isPlayerValid(i)){
+					if (game.playerMessagCollectionTimedOut(i)){
+						game.kickClinetTimedOut(i);
+						
+						if (game.getHasMessageToAll()){ 
+							for (Integer j : allClientChannels.keySet()) {
+								//checks to make sure clients who have connected but have not Joined do not receive messages. 
+								if (game.isPlayerValid(j)){
+									System.err.print("created in state"+ game.getAllPlayerMessageFromState() + "\n");
+							    	allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
+								}
+							}
+							// Reset for new message.
+							game.setHasMessageToAll(false);
+					}		
+				}
+			}
+         }
+
+			
+			// evaluate the lobby time out.
 			// If time up is over round start message will be sent. 
 			if (game.timeOutOver()){
                 game.roundStartMsg();
@@ -81,10 +108,15 @@ public class NonBlockingServer {
 					game.setHasMessageToAllFromGameLogic(false);
 			}
 			
-			 selector.select((long)game.timeToWait);
+			
+			
+			 selector.select(10000); // milli seconds
 			 Set keys = selector.selectedKeys();             
-	                                                         
-		       //Reactive code.  Is only triggered if a client sends a message (including trying to connect)
+	        
+	           /**
+				Reactive code.  Is only triggered if a client sends a message (including trying to connect) 
+	           */
+		    
 		       for (Iterator i = keys.iterator(); i.hasNext();) {
 				SelectionKey key = (SelectionKey) i.next();
 				i.remove();
@@ -137,6 +169,18 @@ public class NonBlockingServer {
 							game.resetPlayerNumWithMessage();
 						}
 
+						
+						
+						for (Integer t : allClientChannels.keySet()) { 
+							if (game.isPlayerValid(t)){
+								if (game.playerMessagCollectionTimedOut(t)){
+									game.kickClinetTimedOut(t);
+									}
+								}
+						}
+						
+						
+						
                         //Message created by a player in a state needs to get sent to all     						
 						if (game.getHasMessageToAll()) {
 
