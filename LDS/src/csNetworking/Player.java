@@ -20,9 +20,10 @@ public class Player {
 	private int attemptCount = 3; 
 	boolean timeOut = false;
 	private boolean hasGone = false;
-	private boolean startTimer = true;
+/*	private boolean startTimer = true;
 	private long collectMessageStartTime = 0;
-	private long collectMessageEndTime = 0;
+	*/
+	//private long collectMessageEndTime = 0;
 	private long maxCollectionTime = 0;
 	private String name;
     private String outMessage = new String();
@@ -41,7 +42,7 @@ public class Player {
 	}
 	
 	
-	/////////  TIMING NOT TESTED YET CHECK CONVERSIONS //////////////////
+/*	/////////  TIMING NOT TESTED YET CHECK CONVERSIONS //////////////////
 	private void startTime(){
 		collectMessageStartTime =  System.currentTimeMillis( );
 	}
@@ -67,7 +68,7 @@ public class Player {
 	private long elapsedTime(){
 		long elapsed = collectMessageEndTime - collectMessageStartTime ;
 		return elapsed;
-	}
+	}*/
 	///////////////////////////////////////////////////////////////////////
 	
 	
@@ -78,10 +79,10 @@ public class Player {
 		boolean bracket1 = false;
 		boolean bracket2 = false;
 
-		if (startTimer) {
+/*		if (startTimer) {
 			startTime();
 			startTimer = false;
-		}
+		}*/
 
 		collectMessage = collectMessage + message;
 
@@ -95,9 +96,9 @@ public class Player {
 					bracket2 = true;
 				
 				//timeUp could happen here...may wait forever for final bracket.....
-				timeIt();
+				//timeIt();
 			}
-		} else {
+		} else{
 			errorValue = -1;
 		}
 
@@ -110,10 +111,10 @@ public class Player {
 				collectMessage = null;
 				// finalBracketFound. Stop collection timer
 				// reset to collection mode.
-	            timeIt(); // is it okay to have it in two places? 
-				startTimer = true;
-				collectMessageStartTime = 0;
-				collectMessageEndTime = 0;
+	            //timeIt(); // is it okay to have it in two places? 
+				//startTimer = true;
+				//collectMessageStartTime = 0;
+				//collectMessageEndTime = 0;
 				return 1;
 			}
 		} else {
@@ -136,6 +137,7 @@ public class Player {
  //TODO i < bids.length-1 b/c i = 0 is null, why??? and i = 1 is "bid".  
 	//change this, a bid is only two numbers.  Opps!
 	public void setBid(String[] bids){
+		myBids.clear(); //added SUN P.M.
 		for (int i = 2; i < bids.length; i++) {
 			myBids.add(Integer.parseInt(bids[i]));
 		}
@@ -234,17 +236,19 @@ public class Player {
 	
 	
 	//Pre:  Takes the number of dice the player has
-	//Post: Roles all the dice. 
+	//Post: Roles all the dice.  Has to clear it from the last round first.
 	public void rollDice(){
 		int min = 1;
 		int max = 6; 
 
 		Integer value;
 		Random r = new Random();
-		
-		for (int i = 0; i <= diceCount; i++) {
+		myDice.clear();
+		System.err.print( "dicecount is "+diceCount + "\n");
+		for (int i = 0; i < diceCount; i++) { //Camille Changed Monday A.M., was <=
 			value = r.nextInt(max - min +1) + min;
 			myDice.add(value);
+			System.err.print(myDice.add(value) + "\n");
 		}
 	}
 	

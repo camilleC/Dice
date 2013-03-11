@@ -74,7 +74,7 @@ public class NonBlockingServer {
              */
 			
 			//Has any channel timed out on a message? 
-			for (Integer i : allClientChannels.keySet()) { 
+/*			for (Integer i : allClientChannels.keySet()) { 
 				if (game.isPlayerValid(i)){
 					if (game.playerMessagCollectionTimedOut(i)){
 						game.kickClinetTimedOut(i);
@@ -92,7 +92,7 @@ public class NonBlockingServer {
 					}		
 				}
 			}
-         }
+         }*/
 
 			
 			// evaluate the lobby time out.
@@ -106,6 +106,20 @@ public class NonBlockingServer {
 					}
 					game.reSetSendRoundMessage(); //this will set round message to false so that I don't keep getting it. 
 					game.setHasMessageToAllFromGameLogic(false);
+					
+					//send dice message
+					if (game.getDiceMsg()) {
+
+						for (Integer j : allClientChannels.keySet()) {
+							//checks to make sure clients who have connected but have not Joined do not receive messages. 
+							if (game.isPlayerInRound(j)){
+							allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getPlayerDiceMessageFromState(j))));
+							}
+						}
+						// Reset for new message.
+						game.setDiceMsg();
+					}
+					
 			}
 			
 			
@@ -171,13 +185,13 @@ public class NonBlockingServer {
 
 						
 						
-						for (Integer t : allClientChannels.keySet()) { 
+/*						for (Integer t : allClientChannels.keySet()) { 
 							if (game.isPlayerValid(t)){
 								if (game.playerMessagCollectionTimedOut(t)){
 									game.kickClinetTimedOut(t);
 									}
 								}
-						}
+						}*/
 						
 						
 						

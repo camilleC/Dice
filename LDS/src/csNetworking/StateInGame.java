@@ -109,7 +109,8 @@ public class StateInGame implements State {
     //the last player looses a dice b/c they lied about their bid. 
     //If the client looses all of their dice they are removed from the list of "players" and added to the list of "watchers". 
 	public void challenge(int id) {
-	if (id != myGame.getPlayerTurn()){
+		//if not players turn OR if player is first to go in a game they cannot challange.
+	if ((id != myGame.getPlayerTurn() || 0 == myGame.getLastTurn())){
 		invalidMove(id);
 	}
 		else{
@@ -122,13 +123,20 @@ public class StateInGame implements State {
 			int count = 0;
 			int totalDice;
 			int i;
+			
+
+			
 			lastPlayersBid = myGame.getBid(lastPlayer);
 			lastPlayersDice = myGame.getDice(lastPlayer);
 			totalDice = myGame.getDiceCount(id);
 
+			System.err.print(lastPlayer + "\n");
+			System.err.print(lastPlayersBid.size() + "\n");
 			// Evaluate who is the looser
 			for (i = 0; i < totalDice; i++) {
+				System.err.print("lastPlayersDice" + lastPlayersDice + "\n");
 				if (lastPlayersDice.get(i) == lastPlayersBid.get(0)) {
+					
 					count++;
 				}
 			}
@@ -142,6 +150,7 @@ public class StateInGame implements State {
 				myGame.setPlayerStatus(id, Game.PlayerStatus.WATCHING); 
 			}
 			myGame.setNextPlayerTurn();	
+			myGame.setLooser(looser);
 			msgChallengeReport(id, looser);
 		}
 	}

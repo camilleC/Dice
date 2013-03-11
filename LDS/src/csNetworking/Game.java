@@ -192,6 +192,15 @@ public class Game {
 				reSetStatus();  //game starts, set players from waiting to playing
 				setTurnOrder(); //set order of turns for players. 
 				playersInRound = getCountPlayersMakingMoves(); // count of players making moves at the start of game. 
+				
+				//TODO possibl bug Camille Monday 9:45 a.m.
+				//Does the player need dice?  See if this fixes it 
+				for (int i = 0; i < maxPlayers; i++){
+                    if(isPlayerValid(i)){
+                         playerMap.get(i).rollDice();
+                    }
+				}
+				sendDiceMsg= true;
 				sendRoundMsg = true;
 				unblock = true;
 			}
@@ -587,7 +596,7 @@ public class Game {
 	public void    setPlayerName(int id, String name){playerMap.get(id).setName(name);}
 	public int     getPlayerAttemptCount(int id){return playerMap.get(id).getAttemptCount();}
 	public void    setPlayerAttemptCount(int id, int newValue){ playerMap.get(id).setAttemptCount(newValue);}
-	public boolean playerMessagCollectionTimedOut(int id){return playerMap.get(id).timedOut();}
+	//public boolean playerMessagCollectionTimedOut(int id){return playerMap.get(id).timedOut();}
 	public void setBid(int id, String[] bids){playerMap.get(id).setBid(bids);}
 	public List<Integer> getBid(int id){return playerMap.get(id).getBid();}
 	public boolean getHasGone(int id){return playerMap.get(id).getHasGone();}	
@@ -611,6 +620,7 @@ public class Game {
     public int getLastTurn(){return this.previousTurn;}
     public void reSetSendRoundMessage(){sendRoundMsg = false;}
     public Integer[] getTurnArray(){return turnArray;}
+    public void setLooser(int looser){this.isLooser = looser;}
    
 }
 
