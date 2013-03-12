@@ -110,7 +110,7 @@ public class StateInGame implements State {
     //If the client looses all of their dice they are removed from the list of "players" and added to the list of "watchers". 
 	public void challenge(int id) {
 		//if not players turn OR if player is first to go in a game they cannot challange.
-	if ((id != myGame.getPlayerTurn() || 0 == myGame.getLastTurn())){
+	if (id != myGame.getPlayerTurn()){ //what if it is a new round and the very first person is challenging? 
 		invalidMove(id);
 	}
 		else{
@@ -165,12 +165,12 @@ public class StateInGame implements State {
 		
 		// Set next players turn has already been called
 		//end of round is found so don't send next players num, round start message will. 
-		if (myGame.getPlayerTurn() == myGame.firstPlayer){
-			sb.append("]");
-		}
-		else{
+		//if (myGame.getPlayerTurn() == myGame.firstPlayer){
+		//	sb.append("]");
+		//}
+		//else{
 		   sb.append("]").append(myGame.getPlayerTurnMessage());
-		}
+		//}
 		messageToAll = sb.toString();
 		myGame.setPlayerMessage(id, messageToAll);
 		myGame.setHasMessageToAll(true);
@@ -185,11 +185,11 @@ public class StateInGame implements State {
 		// Set next players turn has already been called
 		// end of round is found so don't send next players num, round start
 		// message will.
-		if (myGame.getPlayerTurn() == myGame.firstPlayer) {
+	//	if (myGame.getPlayerTurn() == myGame.firstPlayer) {
 			sb.append("]");
-		} else {
-			sb.append("]").append(myGame.getPlayerTurnMessage());
-		}
+	//	} else {
+	//		sb.append("]").append(myGame.getPlayerTurnMessage());
+	//	}
 		messageToAll = sb.toString();
 		myGame.setPlayerMessage(id, messageToAll);
 		myGame.setHasMessageToAll(true);

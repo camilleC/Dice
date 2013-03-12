@@ -158,6 +158,7 @@ public class NonBlockingServer {
 						System.err.print("in Key cancle and close");
 						key.cancel();
 						client.close();
+                        //if a client dies here I need to remove them. 
 						continue;
 					}
 					buffer.flip();

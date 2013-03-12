@@ -30,7 +30,7 @@ public class Parser {
 		Boolean hasError = false;
 		
 		if (myMessage[1].equals("join")){ 
-			if (myMessage[2].matches(nameRex) && (myMessage[2].length() <= 10) && (myMessage.length == 3)) {
+			if (myMessage[2].matches(nameRex) && (myMessage[2].length() <= 10)) {
 				message = Game.PlayerAct.JOIN;
 			} else {
 				errorMessage = "name malformed\n";
@@ -38,14 +38,15 @@ public class Parser {
 				
 			}
 		} else if (myMessage[1].equals("quit")){  
-			if ((myMessage.length == 2)) {
-				message = Game.PlayerAct.QUIT;
-			} else {
-				errorMessage = "quit malformed\n";
+				if (myMessage[1].length() == 4){
+			      message = Game.PlayerAct.QUIT;
+				}
+		else {
+				errorMessage = "quit malformed \n";
 				hasError = true;
 			}
 		} else if (myMessage[1].equals("bid")) {
-			if (myMessage[2].matches(bidCountRex) && (myMessage.length == 4) && (myMessage[3].matches(bidFaceRex))) {
+			if (myMessage[2].matches(bidCountRex) && (myMessage[3].matches(bidFaceRex))) {
 				message = Game.PlayerAct.BID;
 			} else {
 				errorMessage = "bid malformed\n";

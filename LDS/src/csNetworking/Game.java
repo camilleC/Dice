@@ -45,6 +45,7 @@ public class Game {
 	private boolean roundEndMessage = false; 
 	private boolean hasAllMessageGameLogic = false;
 	private boolean sendDiceMsg = false;
+	private boolean hasChallenger = false;
 	public boolean unblock = false; //what is this one for???
 	public long maxTimeRecieveMessage = 3; //TODO what should this number be? Specs don't tell me. 
 	
@@ -140,7 +141,14 @@ public class Game {
 	//////////////////////////////////////////////////////////
     // EVALUATE Round end.  Look for a winner
 	//////////////////////////////////////////////////////////
-		if (roundEnd()) {
+		if (hasChallenger){
+		//if (roundEnd()) {
+			
+			//have to restart the turns
+			timeOutOver();
+			lastTurn = turnArray[0];// TODO CAMILLE ADDED MONDAY restart turn order?  
+			whoseTurn = turnArray[0];
+			hasChallenger =  false;
 			// If no winner reset for next round
 			if (-1 == isWinner()) {
 				setHasGone();
@@ -149,6 +157,7 @@ public class Game {
 				lastBidVal = 0;
 				lastBidFace = 0;
 			}
+	
 		}
 			
 		//////////////////////////////////////////////////////////
@@ -235,10 +244,12 @@ public class Game {
 
    // returns true if all players have gone.  Else, returns false. 
 	//TODO Fix this, I am not sure if it is working correctly.  What if there is only one player at the start?  Will it get trigered? 
-	private boolean roundEnd() {
+/*	private boolean roundEnd() {
 		boolean end = false;
 		int playersGone = 0;
 		int playersInRound = 0;
+		
+		//Don't need this code, round end just means that someone has challenged. 
 		for (Integer key : playerMap.keySet()){
 			if ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) && (playerMap.get(key).getHasGone() == true )){
                playersGone++;
@@ -260,7 +271,7 @@ public class Game {
 	//	}
  
 		return end;
-	}
+	}*/
 
 	
 	
@@ -400,25 +411,32 @@ public class Game {
 	*/
 	public int setNextPlayerTurn() {
 		int i;
+		int j;
 		// previous turn is the person before turn is updated.
 		// after the update lastTurn = whose turn so must keep
 		// track of predecessor.
 		previousTurn = whoseTurn;
 
-		System.err.print("  +++++++++++++  previous Turn" + previousTurn + "\n");
 		for (i = lastTurn; i < maxPlayers; i++) {
 			if (isPlayerInRound(turnArray[i])) {
+				//TODO this was commented out...a round just means no one has challenged yet. 
 				if (playerMap.get(i).getHasGone() == false) {
 					whoseTurn = turnArray[i];
 					lastTurn = whoseTurn;
 					break;
 				}
 			}
-			// end of list, reset to start.
-
+				
+			// Everyone has gone.  Need to start back at begining now. 
 			if (i == 29) {
 				whoseTurn = 0;
 				lastTurn = 0;
+				for (j = 0; j < maxPlayers; j++) {
+					if (isPlayerInRound(turnArray[j])) {
+						playerMap.get(j).setHasGone(false); 
+					}
+				}
+				System.err.print(" foudn index 29 WHOES TURN " + whoseTurn + " \n");
 			}
 		}
 		System.err.print("   +++++++++  next turn has been set  to " + whoseTurn + "\n");
@@ -620,7 +638,10 @@ public class Game {
     public int getLastTurn(){return this.previousTurn;}
     public void reSetSendRoundMessage(){sendRoundMsg = false;}
     public Integer[] getTurnArray(){return turnArray;}
-    public void setLooser(int looser){this.isLooser = looser;}
+    public void setLooser(int looser){
+    	this.isLooser = looser;
+    	hasChallenger = true;
+    }
    
 }
 
