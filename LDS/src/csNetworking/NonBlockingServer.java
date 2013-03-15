@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import csNetworking.Game.PlayerStatus;
+
 
 
 public class NonBlockingServer {
@@ -40,7 +42,9 @@ public class NonBlockingServer {
 	private int port;
 	private Game game; 
 	private Map<Integer, SocketChannel> allClientChannels = new HashMap<Integer, SocketChannel>();
-    
+	private Map<SocketChannel,ByteBuffer> clientBuffers = new HashMap<SocketChannel, ByteBuffer>();
+    //private ByteBuffer readBuffer;
+    private int bytesread = 0;
 	public NonBlockingServer(int myPort, Game myGame) {
 		port = myPort; // instance variable automatically set to 0.
 		this.game = myGame;
@@ -73,27 +77,6 @@ public class NonBlockingServer {
 			 even if they are not sending the server a message. 
              */
 			
-			//Has any channel timed out on a message? 
-/*			for (Integer i : allClientChannels.keySet()) { 
-				if (game.isPlayerValid(i)){
-					if (game.playerMessagCollectionTimedOut(i)){
-						game.kickClinetTimedOut(i);
-						
-						if (game.getHasMessageToAll()){ 
-							for (Integer j : allClientChannels.keySet()) {
-								//checks to make sure clients who have connected but have not Joined do not receive messages. 
-								if (game.isPlayerValid(j)){
-									System.err.print("created in state"+ game.getAllPlayerMessageFromState() + "\n");
-							    	allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
-								}
-							}
-							// Reset for new message.
-							game.setHasMessageToAll(false);
-					}		
-				}
-			}
-         }*/
-
 			
 			// evaluate the lobby time out.
 			// If time up is over round start message will be sent. 
@@ -101,7 +84,8 @@ public class NonBlockingServer {
                 game.roundStartMsg();
 					for (Integer j : allClientChannels.keySet()) { 
 						if (game.isPlayerValid(j)){
-							allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+							allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromGameLogic().getBytes()));
+
 						}
 					}
 					game.reSetSendRoundMessage(); //this will set round message to false so that I don't keep getting it. 
@@ -113,7 +97,7 @@ public class NonBlockingServer {
 						for (Integer j : allClientChannels.keySet()) {
 							//checks to make sure clients who have connected but have not Joined do not receive messages. 
 							if (game.isPlayerInRound(j)){
-							allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getPlayerDiceMessageFromState(j))));
+							allClientChannels.get(j).write(ByteBuffer.wrap(game.getPlayerDiceMessageFromState(j).getBytes()));
 							}
 						}
 						// Reset for new message.
@@ -124,7 +108,7 @@ public class NonBlockingServer {
 			
 			
 			
-			 selector.select(10000); // milli seconds
+			 selector.select(2L); // milli seconds
 			 Set keys = selector.selectedKeys();             
 	        
 	           /**
@@ -147,40 +131,79 @@ public class NonBlockingServer {
 					
 						//Client added but not "joined" yet. 
 						game.addPlayer(counter);
+						clientBuffers.put(client, ByteBuffer.allocate(600));
 						counter++;
+						System.out.print(counter);
 					}
 				} else {
 					SocketChannel client = (SocketChannel) key.channel();
 					if (!key.isReadable())
 						continue;
-					int bytesread = client.read(buffer);
+					try{
+					ByteBuffer readBuffer = clientBuffers.get(client);
+					int bytesread = client.read(readBuffer);
+					
+
+		
 					if (bytesread == -1) {//end of stream, client disconnected
 						System.err.print("in Key cancle and close");
 						key.cancel();
 						client.close();
-                        //if a client dies here I need to remove them. 
+						String messageOut = new String();
+						//This will give me the id of the disconnecting client. 
+						Integer closeId = ((Integer)key.attachment()).intValue();
+						game.setPlayerStatus(closeId, Game.PlayerStatus.REMOVE);
+						
+						//did getting the next player cause a winner? 
+					    //If players turn
+						if (closeId == game.getPlayerTurn()) {
+							if (game.isWinner() == -1) {
+						    	game.setNextPlayerTurn();
+						    	messageOut = ("[client_quit, " + closeId + "][player_turn, " + game.getPlayerTurn() + "]"); 
+							}
+							//someone quit and now there is a winner.
+						    //the call to isWinner above will build a message. 
+						}
+						else { //if not players turn, see if there is a winner.  
+							game.isWinner();	
+							messageOut = ("[client_quit, " + closeId + "]");
+							}
+						
+						for (Integer j : allClientChannels.keySet()) {
+							if (game.isPlayerInRound(j)){
+							allClientChannels.get(j).write(ByteBuffer.wrap(messageOut.getBytes()));
+							}
+						}
+						
 						continue;
-					}
-					buffer.flip();
-					String request = decoder.decode(buffer).toString();
 					
-					game.setMessage(((Integer) key.attachment()).intValue(),request);
+					}
+					//buffer.flip();
+					
+					
+					String request = new String(readBuffer.array());
+					System.out.println("From Client:" + request);
+					clientBuffers.put(client, ByteBuffer.allocate(600));
+					readBuffer.clear();
+					
+					game.setMessage(((Integer) key.attachment()).intValue(),request.trim());
 					//System.out.print(request);
-					buffer.clear();
+					readBuffer.clear();
 					
 					if (request.trim().equals("quit")) {
 						client.write(encoder.encode(CharBuffer.wrap("Bye.")));
 						key.cancel();
 						client.close();
 					} else {
-						//int num = ((Integer) key.attachment()).intValue();
+					
 						String response = new String();
                         
 						int temp = game.getPlayerNumWithMessage();
 
 						if (temp != -1) {
 							response = game.getPlayerMessage(game.getPlayerNumWithMessage());
-							allClientChannels.get(game.getPlayerNumWithMessage()).write(encoder.encode(CharBuffer.wrap(response)));
+							//allClientChannels.get(game.getPlayerNumWithMessage()).write(encoder.encode(CharBuffer.wrap(response)));
+							allClientChannels.get(game.getPlayerNumWithMessage()).write(ByteBuffer.wrap(response.getBytes()));
 							game.resetPlayerNumWithMessage();
 						}
 
@@ -203,8 +226,7 @@ public class NonBlockingServer {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
 									System.err.print("created in state"+ game.getAllPlayerMessageFromState() + "\n");
-								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromState())));
-							   
+								allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromState().getBytes()));
 								}
 							}
 							
@@ -229,7 +251,8 @@ public class NonBlockingServer {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
 									System.err.print("created in logic" + game.getAllPlayerMessageFromGameLogic() + "\n");
-									allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+									//allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
+									allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromGameLogic().getBytes()));
 								}
 							}
 							
@@ -243,7 +266,7 @@ public class NonBlockingServer {
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerInRound(j)){
-								allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getPlayerDiceMessageFromState(j))));
+								allClientChannels.get(j).write(ByteBuffer.wrap(game.getPlayerDiceMessageFromState(j).getBytes()));
 								}
 							}
 							// Reset for new message.
@@ -253,11 +276,14 @@ public class NonBlockingServer {
 						
 					}
 				}
+					catch (IOException e){
+					      System.err.print("Cancelling Key - No Attachment");
+						}
 			}
 
-				}
+		       }
 			}
-
+	}
 		
 
 	

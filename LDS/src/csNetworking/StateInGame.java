@@ -30,7 +30,6 @@ public class StateInGame implements State {
 				sb.append("[state, in_game, ").append(id).append(", ").append(myGame.getPlayerCount());
 	
 				for (int i = 0; i < myGame. getMaxPlayerCnt(); i++){
-	            
 	            	if(myGame.isPlayerValid(i)){
 					sb.append(" , ").append(myGame.getPlayerName(i)).append(", ").append(i);
 	            	}
@@ -76,15 +75,16 @@ public class StateInGame implements State {
 
 	};
 	/*	
-	Receives players bid. Sets bid in player object. Sends a bid report.
-	alls for next players turn to be incremented, evaluates for end of
-	round.*/           
+	PRE: Receives players bid. 
+	POST: Sets bid in player object. Sends a bid report.
+	      calls for next players turn to be incremented, evaluates for end of
+	      round.*/           
 	
     public int bid(int id, String[] request) {
         int bidDiceCount = 0;
         int bidDiceVal = 0;
         if (request.length  != 4 ) { //TODO learn how to use a try catch block instead of using an else, should it be 3
-                System.err.print("invalid move wrong size" + id + " !\n");
+                System.err.print("invalid move wrong size" +id + " !\n");
                 invalidMove(id);
         } else {
                 bidDiceCount = Integer.parseInt(request[2]);
@@ -110,10 +110,12 @@ public class StateInGame implements State {
     //If the client looses all of their dice they are removed from the list of "players" and added to the list of "watchers". 
 	public void challenge(int id) {
 		//if not players turn OR if player is first to go in a game they cannot challange.
-	if (id != myGame.getPlayerTurn()){ //what if it is a new round and the very first person is challenging? 
+	if (id != myGame.getPlayerTurn() || id == myGame.getLastTurn()){ //what if it is a new round and the very first person is challenging? 
 		invalidMove(id);
 	}
-		else{
+
+	
+		else {
 			myGame.setHasGone(id, true);
 			List<Integer> lastPlayersBid = new ArrayList<Integer>();
 			List<Integer> lastPlayersDice = new ArrayList<Integer>();
@@ -136,7 +138,6 @@ public class StateInGame implements State {
 			for (i = 0; i < totalDice; i++) {
 				System.err.print("lastPlayersDice" + lastPlayersDice + "\n");
 				if (lastPlayersDice.get(i) == lastPlayersBid.get(0)) {
-					
 					count++;
 				}
 			}
@@ -262,7 +263,7 @@ public class StateInGame implements State {
 		//This function will the kicked method. 
 		private void invalidMove(int id){
 			int attempts = myGame.getPlayerAttemptCount(id);
-			System.out.print(attempts);
+			System.out.print("player " + id+ "has attempt count left" +attempts);
 			attempts = attempts -1;
 			System.out.print(attempts);
 			if (attempts == 0){
@@ -278,3 +279,54 @@ public class StateInGame implements State {
 			}
 		
 		};
+		
+		
+		/*
+		
+
+		try{
+		if (myMessage[1].equals("join")){ 
+			if (myMessage[2].matches(nameRex) && (myMessage[2].length() <= 10)) {
+				message = Game.PlayerAct.JOIN;
+			} else {
+				errorMessage = "name malformed";
+				hasError = true;
+				
+			}
+		} else if (myMessage[1].equals("quit")){  
+				if (myMessage[1].length() == 4){
+			      message = Game.PlayerAct.QUIT;
+				}
+		else {
+				errorMessage = "quit malformedn";
+				hasError = true;
+			}
+		} else if (myMessage[1].equals("bid")) {
+			if (myMessage[2].matches(bidCountRex) && (myMessage[3].matches(bidFaceRex))) {
+				message = Game.PlayerAct.BID;
+				System.err.println("BID MESSAGE = " + myMessage[1].toString());
+			} else {
+				errorMessage = "bid malformed";
+				hasError = true;
+			}
+		} else if (myMessage[1].equals("challenge")) {
+			System.err.println("challenge should not be error = |" +  myMessage[1] + "|\n");
+			if (myMessage.length == 2) {
+				message = Game.PlayerAct.CHALLENGE;
+			} else {
+				errorMessage = "challenge malformed";
+				hasError = true;
+			}
+		}
+		if (hasError){
+			System.err.println("ERROR: Client ID " + id + " " + errorMessage);
+			System.err.println("ERROR = |" +  myMessage[1] + "|\n");
+			hasError = false;
+			errorMessage = new String();
+		}
+		}
+		catch (ArrayIndexOutOfBoundsException e){
+		System.err.println("Error: Array handeling exception");
+		}
+		
+		*/

@@ -58,6 +58,7 @@ public class Game {
 	private int lastBidVal;  //should these be static?  
 	private int lastBidFace;
     private int playerToKick;
+    public int firstInRound = -1;
    
     public int firstPlayer = -2; //TODO make this private and put in a getter. 
 	public int playersInRound = -2;
@@ -146,8 +147,8 @@ public class Game {
 			
 			//have to restart the turns
 			timeOutOver();
-			lastTurn = turnArray[0];// TODO CAMILLE ADDED MONDAY restart turn order?  
-			whoseTurn = turnArray[0];
+			//lastTurn = turnArray[0];// TODO CAMILLE ADDED MONDAY restart turn order?  
+			//whoseTurn = turnArray[0];
 			hasChallenger =  false;
 			// If no winner reset for next round
 			if (-1 == isWinner()) {
@@ -376,7 +377,7 @@ public class Game {
 			sb.append(" , ").append(i).append(", ").append(playerMap.get(i).getPlayersDiceMessage()); 
         	}
 		}
-        sb.append("]  ");  
+        sb.append("]");  
         message = message + sb.toString();
 		return message;
 	}
@@ -401,7 +402,6 @@ public class Game {
 			whoseTurn = 0;
 
 		}
-		System.err.print(" +++++++++++++++ WHOES TURN " + whoseTurn + " \n");
 		return whoseTurn;
 	}
 	
@@ -416,30 +416,41 @@ public class Game {
 		// after the update lastTurn = whose turn so must keep
 		// track of predecessor.
 		previousTurn = whoseTurn;
-
+		System.err.print(" +++++++++++++++ WHOES TURN " + whoseTurn + " \n");
 		for (i = lastTurn; i < maxPlayers; i++) {
-			if (isPlayerInRound(turnArray[i])) {
-				//TODO this was commented out...a round just means no one has challenged yet. 
-				if (playerMap.get(i).getHasGone() == false) {
-					whoseTurn = turnArray[i];
-					lastTurn = whoseTurn;
+			if (turnArray != null) {
+				if (isPlayerInRound(turnArray[i]) && (playerMap.get(i).getPlayerStatus() != PlayerStatus.REMOVE)) {
+					// TODO this was commented out...a round just means no one
+					// has challenged yet.
+					if (playerMap.get(i).getHasGone() == false) {
+						whoseTurn = turnArray[i];
+						lastTurn = whoseTurn;
+						break;
+					}
+					System.err.print(" *********************** WHOES TURN "
+							+ whoseTurn + " \n");
+				}
+
+				// Everyone has gone. Need to start back at begining now.
+				if (i == 29) {
+					setTurnOrder();
+					whoseTurn = turnArray[0];
+					lastTurn = turnArray[0];
+					
+					
+					for (j = 0; j < maxPlayers; j++) {
+						if (isPlayerInRound(turnArray[j])) {		
+							playerMap.get(j).setHasGone(false);
+							System.err.print(" foudn index 29 WHOES TURN " + whoseTurn);
+						}
+					}
+					System.err.print(" foudn index 29 WHOES TURN " + lastTurn);
 					break;
 				}
 			}
-				
-			// Everyone has gone.  Need to start back at begining now. 
-			if (i == 29) {
-				whoseTurn = 0;
-				lastTurn = 0;
-				for (j = 0; j < maxPlayers; j++) {
-					if (isPlayerInRound(turnArray[j])) {
-						playerMap.get(j).setHasGone(false); 
-					}
-				}
-				System.err.print(" foudn index 29 WHOES TURN " + whoseTurn + " \n");
-			}
 		}
-		System.err.print("   +++++++++  next turn has been set  to " + whoseTurn + "\n");
+	//	System.err.print("   +++++++++  next turn has been set  to "
+		//		+ whoseTurn + "\n");
 		return whoseTurn;
 	}
 
@@ -545,8 +556,12 @@ public class Game {
 		for (i = 0; i < maxPlayers; i++){
 			turnArray[i] = -1;
 			}
+		int j = 0;
 		for (Integer key : playerMap.keySet()){
-		   turnArray[(int)key] = (int)key;
+			if (playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING){
+		   turnArray[j] = (int)key;
+		   j++;
+			}
 		}
 		firstPlayer = turnArray[0];
 	}

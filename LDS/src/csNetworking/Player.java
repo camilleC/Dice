@@ -27,7 +27,7 @@ public class Player {
 	private long maxCollectionTime = 0;
 	private String name;
     private String outMessage = new String();
-	private String collectMessage;
+	private StringBuilder collectMessage = new StringBuilder();
 	private String[] finalMessage;
 	static Random generator = new Random();
 	private List<Integer> myDice = new ArrayList<Integer>();
@@ -83,10 +83,10 @@ public class Player {
 			startTime();
 			startTimer = false;
 		}*/
+        System.err.println(message);
+		collectMessage.append(message);
 
-		collectMessage = collectMessage + message;
-
-		char[] chars = collectMessage.toCharArray();
+		char[] chars = collectMessage.toString().toCharArray();
 		if (chars.length <= 600) { //message need to be less than 600 characters long
 			for (int i = 0, n = chars.length; i < n; i++) {
 				char c = chars[i];
@@ -107,8 +107,8 @@ public class Player {
 				String delims = "[\\[, \\]]+"; // should I NOT have the plus????
 												// there should just be one set
 												// of brackets per message.
-				finalMessage = collectMessage.split(delims);
-				collectMessage = null;
+				finalMessage = collectMessage.toString().trim().split(delims);
+				collectMessage = new StringBuilder();
 				// finalBracketFound. Stop collection timer
 				// reset to collection mode.
 	            //timeIt(); // is it okay to have it in two places? 
@@ -244,11 +244,11 @@ public class Player {
 		Integer value;
 		Random r = new Random();
 		myDice.clear();
-		System.err.print( "dicecount is "+diceCount + "\n");
+		//System.err.print( "dicecount is " + diceCount + "\n");
 		for (int i = 0; i < diceCount; i++) { //Camille Changed Monday A.M., was <=
 			value = r.nextInt(max - min +1) + min;
 			myDice.add(value);
-			System.err.print(myDice.add(value) + "\n");
+			//System.err.print(myDice.add(value) + "\n");
 		}
 	}
 	
