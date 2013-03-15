@@ -20,7 +20,7 @@ public class StateTimerLobby implements State {
 		
 		//has the player already joined? If so Trying to join again is an invalid move. 
 		if (myGame.getPlayerStatus(id) != Game.PlayerStatus.CONNECTED){
-			invalidMove(id);
+			invalid(id);
 		}
 		
 		messageToAll = new String();// ADDED MON NIGHT
@@ -54,11 +54,11 @@ public class StateTimerLobby implements State {
 	// players will recieve invalid move message if they bid or challenge while
 	// in the lobby
 	public int bid(int id, String[] request) {
-		invalidMove(id);
+		invalid(id);
 		return 0;
 	}
 
-	public void challenge(int id) {invalidMove(id);}
+	public void challenge(int id) {invalid(id);}
 
 	public void quit(int id){
 		messageToAll = new String();
@@ -75,7 +75,9 @@ public class StateTimerLobby implements State {
 	}
 	
 	////////////////////////////////////////////////////
-	// Private methods
+	// Was private.  Made public so parser can kick if invalid message.  this should
+	// all be moved into one class.  These functions appear multiple times.  Refactor code!
+	// 
 	///////////////////////////////////////////////////
 	
 	//sends kicked message, sets flags so that after message is sent client connection will be closed. 
@@ -83,7 +85,7 @@ public class StateTimerLobby implements State {
 		myGame.setKicked(id);
 		myGame.setReadyToKick(true);
 		myGame.setHasGone(id, true); //This counts as thier turn. 
-		myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
+		//myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE); // NO.  Do after message is sent. 
 		messageToAll = new String();
 		
 		
@@ -111,7 +113,7 @@ public class StateTimerLobby implements State {
 
 	// Decrements attempt count. If to many invalid moves
 	// This function will the kicked method.
-	private void invalidMove(int id) {
+	public void invalid(int id) {
 		int attempts = myGame.getPlayerAttemptCount(id);
 		System.out.print(attempts);
 		attempts = attempts - 1;

@@ -19,7 +19,7 @@ public class StateLobby implements State{
 		//has the player already joined? If so Trying to join again is an invalid move.
 		//I don't think the messaging for this is set up...might not need it. 
 		if (myGame.getPlayerStatus(id) != Game.PlayerStatus.CONNECTED){
-			invalidMove(id);
+			invalid(id);
 		}
 		
 		    messageToAll = new String();// ADDED FRIDAY NIGHT
@@ -57,7 +57,7 @@ public class StateLobby implements State{
 		myGame.setKicked(id);
 		myGame.setReadyToKick(true);
 		myGame.setHasGone(id, true); //This counts as thier turn. 
-		myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);
+		//myGame.setPlayerStatus(id, Game.PlayerStatus.REMOVE);// NO. Do this after message sent. 
 		messageToAll = new String();
 		
 		
@@ -85,7 +85,7 @@ public class StateLobby implements State{
 
 	//Decrements attempt count.  If to many invalid moves
 	//This function will the kicked method. 
-	private void invalidMove(int id){
+	public void invalid(int id){
 		int attempts = myGame.getPlayerAttemptCount(id);
 		System.out.print(attempts);
 		attempts = attempts -1;
@@ -103,8 +103,8 @@ public class StateLobby implements State{
 		}
 		
 	//players will recieve invalid move message if they bid or challenge while in the lobby	
-	public int bid(int id, String[] request){invalidMove(id);return 0;}
-	public void challenge(int id){invalidMove(id);}
+	public int bid(int id, String[] request){invalid(id);return 0;}
+	public void challenge(int id){invalid(id);}
 
 
 	//public String sendToAll(){return messageToAll;}

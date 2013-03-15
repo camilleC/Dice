@@ -133,7 +133,7 @@ public class NonBlockingServer {
 						game.addPlayer(counter);
 						clientBuffers.put(client, ByteBuffer.allocate(600));
 						counter++;
-						System.out.print(counter);
+						//System.out.print(counter);
 					}
 				} else {
 					SocketChannel client = (SocketChannel) key.channel();
@@ -146,14 +146,13 @@ public class NonBlockingServer {
 
 		
 					if (bytesread == -1) {//end of stream, client disconnected
-						System.err.print("in Key cancle and close");
 						key.cancel();
 						client.close();
 						String messageOut = new String();
 						//This will give me the id of the disconnecting client. 
 						Integer closeId = ((Integer)key.attachment()).intValue();
 						game.setPlayerStatus(closeId, Game.PlayerStatus.REMOVE);
-						
+						System.err.print("Cancled connection to: " + closeId);
 						//did getting the next player cause a winner? 
 					    //If players turn
 						if (closeId == game.getPlayerTurn()) {
@@ -182,12 +181,11 @@ public class NonBlockingServer {
 					
 					
 					String request = new String(readBuffer.array());
-					System.out.println("From Client:" + request);
+					System.err.println("From Client: " + request);
 					clientBuffers.put(client, ByteBuffer.allocate(600));
 					readBuffer.clear();
 					
 					game.setMessage(((Integer) key.attachment()).intValue(),request.trim());
-					//System.out.print(request);
 					readBuffer.clear();
 					
 					if (request.trim().equals("quit")) {
@@ -202,30 +200,18 @@ public class NonBlockingServer {
 
 						if (temp != -1) {
 							response = game.getPlayerMessage(game.getPlayerNumWithMessage());
-							//allClientChannels.get(game.getPlayerNumWithMessage()).write(encoder.encode(CharBuffer.wrap(response)));
 							allClientChannels.get(game.getPlayerNumWithMessage()).write(ByteBuffer.wrap(response.getBytes()));
 							game.resetPlayerNumWithMessage();
 						}
 
 						
 						
-/*						for (Integer t : allClientChannels.keySet()) { 
-							if (game.isPlayerValid(t)){
-								if (game.playerMessagCollectionTimedOut(t)){
-									game.kickClinetTimedOut(t);
-									}
-								}
-						}*/
-						
-						
-						
                         //Message created by a player in a state needs to get sent to all     						
 						if (game.getHasMessageToAll()) {
-
+							System.err.print("Server: "+ game.getAllPlayerMessageFromState() + "\n");
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-									System.err.print("created in state"+ game.getAllPlayerMessageFromState() + "\n");
 								allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromState().getBytes()));
 								}
 							}
@@ -246,11 +232,10 @@ public class NonBlockingServer {
 						
 						//Message created by the game logic needs to get sent to all
 						if (game.getHasMessageToAllFromGameLogic()) {
-                            System.err.print("Should I bee here? \n");
+							System.err.print("Server: "+ game.getAllPlayerMessageFromGameLogic() + "\n");
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerValid(j)){
-									System.err.print("created in logic" + game.getAllPlayerMessageFromGameLogic() + "\n");
 									//allClientChannels.get(j).write(encoder.encode(CharBuffer.wrap(game.getAllPlayerMessageFromGameLogic())));
 									allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromGameLogic().getBytes()));
 								}
@@ -262,10 +247,10 @@ public class NonBlockingServer {
 						}
 						
 						if (game.getDiceMsg()) {
-
 							for (Integer j : allClientChannels.keySet()) {
 								//checks to make sure clients who have connected but have not Joined do not receive messages. 
 								if (game.isPlayerInRound(j)){
+							    System.err.println("Server: to client #" + j +game.getPlayerDiceMessageFromState(j));
 								allClientChannels.get(j).write(ByteBuffer.wrap(game.getPlayerDiceMessageFromState(j).getBytes()));
 								}
 							}
@@ -277,7 +262,7 @@ public class NonBlockingServer {
 					}
 				}
 					catch (IOException e){
-					      System.err.print("Cancelling Key - No Attachment");
+					      System.err.println("Cancelling Key - No Attachment");
 						}
 			}
 
@@ -296,8 +281,8 @@ public class NonBlockingServer {
 	 */
 	public void clientClose(int id) {
 		try {
+			
 			allClientChannels.get(id).close();
-
 			System.out.print("in key cancle");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

@@ -18,5 +18,6 @@ public interface State {
 	public void challenge(int id);
 	public String sendToAll();
 	public void kicked(int id);
+	public void invalid(int id);
 
 }
