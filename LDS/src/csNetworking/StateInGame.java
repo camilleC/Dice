@@ -60,7 +60,7 @@ public class StateInGame implements State {
                         if (id == myGame.getPlayerTurn()) {
                                 if (myGame.isWinner() == -1) {
                                 myGame.setNextPlayerTurn();
-                                    messageToAll = ("[client_quit, " + id + "] [player_turn, "
+                                    messageToAll = ("[client_quit, " + id + "][player_turn, "
                                         + myGame.getPlayerTurn() + "]"); 
                                     myGame.setHasMessageToAll(true);
                                 }
@@ -130,14 +130,10 @@ public class StateInGame implements State {
                         int totalDice;
                         int i;
                         
-
-                        
                         lastPlayersBid = myGame.getBid(lastPlayer);
                         lastPlayersDice = myGame.getDice(lastPlayer);
-                        //totalDice = myGame.getDiceCount(id);
+
                         totalDice = myGame.getDiceCount(lastPlayer);
-                       // System.err.print(lastPlayer + "\n");
-                       // System.err.print(lastPlayersBid.size() + "\n");
                         // Evaluate who is the looser
                         for (i = 0; i < totalDice; i++) {
                                 //System.err.print("lastPlayersDice" + lastPlayersDice + "\n");
@@ -150,7 +146,7 @@ public class StateInGame implements State {
                         } else {
                                 looser = id;
                         }
-            //Are there dice left?
+                        //Are there dice left?
                         if (myGame.decrementDice(looser)== 0) {
                                 myGame.setPlayerStatus(id, Game.PlayerStatus.WATCHING); 
                         }
@@ -245,16 +241,16 @@ public class StateInGame implements State {
                         //that it is their turn.  However, must check for a winner first. 
                         if (id == myGame.getPlayerTurn()) {
                                 if (myGame.isWinner() == -1) {
-                                myGame.setNextPlayerTurn();
-                                    messageToAll = ("[client_kicked, " + id + "]"); 
+                                    myGame.setNextPlayerTurn();
+                                    messageToAll = ("[client_kicked, " + id + "]" + myGame.getPlayerTurnMessage()); 
                                     myGame.setHasMessageToAll(true);
                                 }
                                 //someone kicked and now there is a winner.
-                            //the call to isWinner above will build a message. 
+                                //the call to isWinner above will build a message. 
                                 //DO NOT set a MessageToAll here. 
                         }
                         else { //if not players turn check if there is a winner. 
-                                myGame.isWinner();      
+                            myGame.isWinner();      
                             messageToAll = ("[client_kicked, " + id + "]"); 
                             myGame.setHasMessageToAll(true);
                                 }

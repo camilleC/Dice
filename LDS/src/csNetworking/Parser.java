@@ -18,11 +18,6 @@ public class Parser {
 	}
 
 	/**
-	 * Static so I don't need to make objects and function is stateless. will
-	 * return null if it didn't find a correct message.
-	 * 
-	 * TODO ASK. I had to change a bunch of stuff to static. I think I need to
-	 * take kick and invalidMove out and put it in game. Do this if time.
 	 * 
 	 * @param myMessage
 	 * @return

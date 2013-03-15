@@ -46,8 +46,7 @@ public class Game {
 	private boolean sendDiceMsg = false;
 	private boolean hasChallenger = false;
 	public boolean unblock = false; // what is this one for???
-	public long maxTimeRecieveMessage = 3; // TODO what should this number be?
-											// Specs don't tell me.
+	public long maxTimeRecieveMessage = 3; // TODO what should this number be? // Specs don't tell me.
 
 	private int isWinner = -1;
 	private int isLooser = -1;
@@ -234,14 +233,8 @@ public class Game {
 				reSetStatus(); // game starts, set players from waiting to
 								// playing
 				setTurnOrder(); // set order of turns for players.
-				playersInRound = getCountPlayersMakingMoves(); // count of
-																// players
-																// making moves
-																// at the start
-																// of game.
-
-				// TODO possibl bug Camille Monday 9:45 a.m.
-				// Does the player need dice? See if this fixes it
+				playersInRound = getCountPlayersMakingMoves();
+																
 				for (int i = 0; i < maxPlayers; i++) {
 					if (isPlayerValid(i)) {
 						playerMap.get(i).rollDice();
@@ -280,28 +273,6 @@ public class Game {
 		// TODO can I remove from the the player map here?
 	}
 
-	// returns true if all players have gone. Else, returns false.
-	// TODO Fix this, I am not sure if it is working correctly. What if there is
-	// only one player at the start? Will it get trigered?
-	/*
-	 * private boolean roundEnd() { boolean end = false; int playersGone = 0;
-	 * int playersInRound = 0;
-	 * 
-	 * //Don't need this code, round end just means that someone has challenged.
-	 * for (Integer key : playerMap.keySet()){ if
-	 * ((playerMap.get(key).getPlayerStatus() == PlayerStatus.PLAYING) &&
-	 * (playerMap.get(key).getHasGone() == true )){ playersGone++; } }
-	 * 
-	 * playersInRound = getCountPlayersMakingMoves();
-	 * 
-	 * //everyone has gone. if (playersInRound == playersGone){ end = true; }
-	 * 
-	 * //CAMILLE ADDED Friday night. I may have introduced a bug. Check it.
-	 * //only one player remains so they should win by default. //Add a unit
-	 * test? // if (playersInRound-1 == playersGone){ // end = true; // }
-	 * 
-	 * return end; }
-	 */
 
 	// Resets "hasGone" to false so that players can start a new round.
 	private void setHasGone() {
@@ -328,9 +299,7 @@ public class Game {
 		int i = 0;
 		for (i = 0; i < argsIn.length; i++) {
 			if (argsIn[i].equals("-p")) {
-				portNum = Integer.parseInt(argsIn[i + 1]);// portNum // =
-															// Integer.parseInt(argsIn[i+1]);
-															// i++;
+				portNum = Integer.parseInt(argsIn[i + 1]);														
 			}
 			if (argsIn[i].equals("-m")) {
 				minPlayers = Integer.parseInt(argsIn[i + 1]);
@@ -451,18 +420,14 @@ public class Game {
 			if (turnArray != null) {
 				if (isPlayerInRound(turnArray[i])
 						&& (playerMap.get(i).getPlayerStatus() != PlayerStatus.REMOVE)) {
-					// TODO this was commented out...a round just means no one
-					// has challenged yet.
 					if (playerMap.get(i).getHasGone() == false) {
 						whoseTurn = turnArray[i];
 						lastTurn = whoseTurn;
 						break;
 					}
-					//System.err.print(" *********************** WHOES TURN "
-					//		+ whoseTurn + " \n");
 				}
 
-				// Everyone has gone. Need to start back at begining now.
+				// Everyone has gone. Need to start back at beginning now.
 				if (i == 29) {
 					setTurnOrder();
 					whoseTurn = turnArray[0];
@@ -471,17 +436,12 @@ public class Game {
 					for (j = 0; j < maxPlayers; j++) {
 						if (isPlayerInRound(turnArray[j])) {
 							playerMap.get(j).setHasGone(false);
-							//System.err.print(" foudn index 29 WHOES TURN "
-								//	+ whoseTurn);
 						}
 					}
-				//	System.err.print(" foudn index 29 WHOES TURN " + lastTurn);
 					break;
 				}
 			}
 		}
-		// System.err.print("   +++++++++  next turn has been set  to "
-		// + whoseTurn + "\n");
 		return whoseTurn;
 	}
 
@@ -492,7 +452,7 @@ public class Game {
 	/* Returns true if the player is observing OR playing */
 	public boolean isPlayerValid(int id) {
 		boolean valid = false;
-		if (playerMap.containsKey(id)) { // must check this first.
+		if (playerMap.containsKey(id)) {
 			if ((playerMap.get(id).getPlayerStatus() == PlayerStatus.PLAYING)
 					|| playerMap.get(id).getPlayerStatus() == PlayerStatus.WATCHING) {
 				valid = true;
@@ -544,7 +504,6 @@ public class Game {
 	public void setMessage(int clientId, String messageIn) {
 		Player temPlayer = playerMap.get(new Integer(clientId));
 		assert temPlayer != null;
-		// TODO: check if key is valid.
 		if (playerMap.get(new Integer(clientId)).setMessage(messageIn) != -1) {
 			gameLogic(new Integer(clientId), playerMap.get(clientId)
 					.getMessage());
@@ -626,9 +585,6 @@ public class Game {
 		return count;
 	}
 
-	// ==============================================================
-	// Getters and Setters
-	// ==============================================================
 	// Messages from parser
 	public void Invalid(int id) {
 		state.invalid(id);
@@ -667,13 +623,13 @@ public class Game {
 
 	public void resetMessageFromGameLogicString() {
 		messageFromGameLogic = new String();
-	} // CAMILLE ADDED WILL THIS FIX REAPEATING MESSAGE?
+	} 
 
 	public void setHasMessageToAllFromGameLogic(boolean reset) {
 		hasAllMessageGameLogic = reset;
 	}
 
-	// Methods for dice
+
 	public void setDiceMsg() {
 		sendDiceMsg = false;
 	}
@@ -723,8 +679,7 @@ public class Game {
 		playerMap.get(id).setAttemptCount(newValue);
 	}
 
-	// public boolean playerMessagCollectionTimedOut(int id){return
-	// playerMap.get(id).timedOut();}
+
 	public void setBid(int id, String[] bids) {
 		playerMap.get(id).setBid(bids);
 	}

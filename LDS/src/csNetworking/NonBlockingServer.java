@@ -84,7 +84,15 @@ public class NonBlockingServer {
                 game.roundStartMsg();
 					for (Integer j : allClientChannels.keySet()) { 
 						if (game.isPlayerValid(j)){
+							try{
+							System.err.println("Server: to client #" + j + game.getAllPlayerMessageFromGameLogic());
 							allClientChannels.get(j).write(ByteBuffer.wrap(game.getAllPlayerMessageFromGameLogic().getBytes()));
+							}
+							//TODO:  Ask Dr. Meehan
+							catch(ConcurrentModificationException e){
+								clientClose(j);
+								System.err.println("ERROR: Client closed before write finished on server");
+							}
 
 						}
 					}
@@ -97,6 +105,7 @@ public class NonBlockingServer {
 						for (Integer j : allClientChannels.keySet()) {
 							//checks to make sure clients who have connected but have not Joined do not receive messages. 
 							if (game.isPlayerInRound(j)){
+							System.err.println("Server: to client #" + j +game.getPlayerDiceMessageFromState(j));
 							allClientChannels.get(j).write(ByteBuffer.wrap(game.getPlayerDiceMessageFromState(j).getBytes()));
 							}
 						}
@@ -200,6 +209,7 @@ public class NonBlockingServer {
 
 						if (temp != -1) {
 							response = game.getPlayerMessage(game.getPlayerNumWithMessage());
+							System.err.println("Server: " + response);
 							allClientChannels.get(game.getPlayerNumWithMessage()).write(ByteBuffer.wrap(response.getBytes()));
 							game.resetPlayerNumWithMessage();
 						}
@@ -283,7 +293,8 @@ public class NonBlockingServer {
 		try {
 			
 			allClientChannels.get(id).close();
-			System.out.print("in key cancle");
+			System.err.print("in key cancle");
+			game.setPlayerStatus(id, Game.PlayerStatus.REMOVE); //Added just for insureance. 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -83,7 +83,7 @@ public class Player {
                         startTime();
                         startTimer = false;
                 }*/
-        System.err.println(message);
+        //System.err.println(message);
                 collectMessage.append(message);
 
                 char[] chars = collectMessage.toString().toCharArray();
